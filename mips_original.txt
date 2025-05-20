@@ -1,0 +1,52 @@
+.data
+Pai: .word 3
+a: .word 0
+b: .word 0
+c: .word 0
+testBlock: .word 0
+_str_lit_0: .asciiz "\n"
+_newline: .asciiz "
+"
+
+.text
+.globl main
+    li $t0, 1       # Load immediate 1
+    sw $t0, testBlock
+main:
+    addiu $sp, $sp, -8  # Allocate space for old $fp and $ra
+    sw $fp, 4($sp)      # Save old frame pointer
+    sw $ra, 0($sp)      # Save return address
+    addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)
+    addiu $sp, $sp, -12  # Allocate space for locals and temps
+    # MIPS_DEBUG: No params to process for main (funcSym=valid, params.empty()=true)
+    lw $a0, testBlock       # Load from testBlock (testBlock)
+    li $v0, 1           # System call for print_int
+    syscall
+    li $v0, 4           # System call for print_string
+    la $a0, _str_lit_0 # Address of string to print
+    syscall
+    li $t0, 2       # Load immediate 2
+    sw $t0, -8($fp)
+    lw $a0, -8($fp)       # Load from __main_testBlock_s2 (-8($fp))
+    li $v0, 1           # System call for print_int
+    syscall
+    li $v0, 4           # System call for print_string
+    la $a0, _str_lit_0 # Address of string to print
+    syscall
+    li $t0, 3       # Load immediate 3
+    sw $t0, -12($fp)
+    lw $a0, -12($fp)       # Load from __main_testBlock_s3 (-12($fp))
+    li $v0, 1           # System call for print_int
+    syscall
+    li $v0, 4           # System call for print_string
+    la $a0, _str_lit_0 # Address of string to print
+    syscall
+    li $v0, 0       # Load immediate 0
+_L_main_epilogue:
+    move $sp, $fp         # Restore $sp to point to the location of the saved old $fp.
+    lw $ra, -4($sp)       # Restore $ra from saved_fp_location - 4.
+    lw $fp, 0($sp)        # Restore $fp from saved_fp_location.
+    addiu $sp, $sp, 8     # Pop the saved $fp and $ra from the stack.
+    li $v0, 10          # System call for exit
+    syscall             # Exit
+

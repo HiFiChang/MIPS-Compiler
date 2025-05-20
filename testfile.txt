@@ -1,0 +1,18 @@
+
+const int Pai = 3;
+int a, b, c;
+int testBlock = 1;
+
+
+int main()
+{
+	printf("%d\n", testBlock);
+	int testBlock = 2;
+	{
+		printf("%d\n", testBlock);
+		int testBlock = 3;
+		printf("%d\n", testBlock);
+	}
+	
+	return 0;
+}
