@@ -157,7 +157,9 @@ bool SymbolTable::addParamSymbol(Symbol& paramSymbol, int paramIndex) {
         return false; 
     }
 
-    paramSymbol.offset = 4 * (paramIndex + 1); 
+    // All parameters will have a unique, positive offset from $fp in the callee's frame
+    // This offset is where they are expected to be for unified access during function execution.
+    paramSymbol.offset = (paramIndex + 1) * 4;
     paramSymbol.isParam = true; 
 
     // Check for redefinition in the intended scope map

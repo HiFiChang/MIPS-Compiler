@@ -1,6 +1,6 @@
-ALU 	: 516
-Jump 	: 12
-Branch 	: 14
-Memory 	: 583
-Other 	: 15
-FinalCycle : 1749
+ALU 	: 47
+Jump 	: 14
+Branch 	: 2
+Memory 	: 40
+Other 	: 3
+FinalCycle : 162

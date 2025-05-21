@@ -1,612 +1,89 @@
 .data
-constArray1D: .word 1, 2, 3
-size: .word 10
-value: .word 1
-_str_lit_0: .asciiz "sum of constArray1D: "
-_str_lit_1: .asciiz "\n"
-_str_lit_2: .asciiz "num of factorial9: "
-_str_lit_3: .asciiz " "
+_str_lit_0: .asciiz "true\n"
+_str_lit_1: .asciiz "false\n"
 _newline: .asciiz "
 "
 
 .text
 .globl main
+copy:
+    addiu $sp, $sp, -8  # Allocate space for old $fp and $ra
+    sw $fp, 4($sp)      # Save old frame pointer
+    sw $ra, 0($sp)      # Save return address
+    addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)
+    addiu $sp, $sp, -4  # Allocate space for locals and temps
+    # MIPS_DEBUG: Processing params for func: copy
+    # Step 1: Secure stack-passed parameters by moving them to final slots
+    # Step 2: Store register-passed parameters to their final slots
+    sw $a0, 4($fp)  # Store register param 'n' (from $a0) to its designated stack slot
+    lw $v0, 4($fp)       # Load from __copy_n_s2 (4($fp))
+    j _L_copy_epilogue # Jump to epilogue on return val
+_L_copy_epilogue:
+    move $sp, $fp
+    lw $ra, -4($sp)
+    lw $fp, 0($sp)
+    addiu $sp, $sp, 4
+    jr $ra
+
 main:
     addiu $sp, $sp, -8  # Allocate space for old $fp and $ra
     sw $fp, 4($sp)      # Save old frame pointer
     sw $ra, 0($sp)      # Save return address
     addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)
-    addiu $sp, $sp, -560  # Allocate space for locals and temps
-    # MIPS_DEBUG: No params to process for main (funcSym=valid, params.empty()=true)
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -96($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -96($fp)       # Load from _t0 (-96($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -100($fp)
-    lw $t0, -100($fp)       # Load from _t1 (-100($fp))
-    li $t1, 0       # Load immediate 0
-    sw $t1, 0($t0)        # Store value 0 (in $t1) to address in _t1 (in $t0)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -104($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -104($fp)       # Load from _t2 (-104($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -108($fp)
-    lw $t0, -108($fp)       # Load from _t3 (-108($fp))
-    li $t1, 1       # Load immediate 1
-    sw $t1, 0($t0)        # Store value 1 (in $t1) to address in _t3 (in $t0)
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -112($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -112($fp)       # Load from _t4 (-112($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -116($fp)
-    lw $t0, -116($fp)       # Load from _t5 (-116($fp))
-    li $t1, 2       # Load immediate 2
-    sw $t1, 0($t0)        # Store value 2 (in $t1) to address in _t5 (in $t0)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -120($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -120($fp)       # Load from _t6 (-120($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -124($fp)
-    lw $t0, -124($fp)       # Load from _t7 (-124($fp))
-    li $t1, 3       # Load immediate 3
-    sw $t1, 0($t0)        # Store value 3 (in $t1) to address in _t7 (in $t0)
-    li $t0, 4       # Load immediate 4
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -128($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -128($fp)       # Load from _t8 (-128($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -132($fp)
-    lw $t0, -132($fp)       # Load from _t9 (-132($fp))
-    li $t1, 4       # Load immediate 4
-    sw $t1, 0($t0)        # Store value 4 (in $t1) to address in _t9 (in $t0)
-    li $t0, 5       # Load immediate 5
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -136($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -136($fp)       # Load from _t10 (-136($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -140($fp)
-    lw $t0, -140($fp)       # Load from _t11 (-140($fp))
-    li $t1, 5       # Load immediate 5
-    sw $t1, 0($t0)        # Store value 5 (in $t1) to address in _t11 (in $t0)
-    li $t0, 6       # Load immediate 6
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -144($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -144($fp)       # Load from _t12 (-144($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -148($fp)
-    lw $t0, -148($fp)       # Load from _t13 (-148($fp))
-    li $t1, 6       # Load immediate 6
-    sw $t1, 0($t0)        # Store value 6 (in $t1) to address in _t13 (in $t0)
-    li $t0, 7       # Load immediate 7
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -152($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -152($fp)       # Load from _t14 (-152($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -156($fp)
-    lw $t0, -156($fp)       # Load from _t15 (-156($fp))
-    li $t1, 7       # Load immediate 7
-    sw $t1, 0($t0)        # Store value 7 (in $t1) to address in _t15 (in $t0)
-    li $t0, 8       # Load immediate 8
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -160($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -160($fp)       # Load from _t16 (-160($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -164($fp)
-    lw $t0, -164($fp)       # Load from _t17 (-164($fp))
-    li $t1, 8       # Load immediate 8
-    sw $t1, 0($t0)        # Store value 8 (in $t1) to address in _t17 (in $t0)
-    li $t0, 9       # Load immediate 9
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -168($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -168($fp)       # Load from _t18 (-168($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -172($fp)
-    lw $t0, -172($fp)       # Load from _t19 (-172($fp))
-    li $t1, 9       # Load immediate 9
-    sw $t1, 0($t0)        # Store value 9 (in $t1) to address in _t19 (in $t0)
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -208($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -208($fp)       # Load from _t20 (-208($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -212($fp)
-    lw $t0, -212($fp)       # Load from _t21 (-212($fp))
-    li $t1, 1       # Load immediate 1
-    sw $t1, 0($t0)        # Store value 1 (in $t1) to address in _t21 (in $t0)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -216($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -216($fp)       # Load from _t22 (-216($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -220($fp)
-    lw $t0, -220($fp)       # Load from _t23 (-220($fp))
-    li $t1, 2       # Load immediate 2
-    sw $t1, 0($t0)        # Store value 2 (in $t1) to address in _t23 (in $t0)
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -224($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -224($fp)       # Load from _t24 (-224($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -228($fp)
-    lw $t0, -228($fp)       # Load from _t25 (-228($fp))
-    li $t1, 3       # Load immediate 3
-    sw $t1, 0($t0)        # Store value 3 (in $t1) to address in _t25 (in $t0)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -232($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -232($fp)       # Load from _t26 (-232($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -236($fp)
-    lw $t0, -236($fp)       # Load from _t27 (-236($fp))
-    li $t1, 4       # Load immediate 4
-    sw $t1, 0($t0)        # Store value 4 (in $t1) to address in _t27 (in $t0)
-    li $t0, 0       # Load immediate 0
-    sw $t0, -240($fp)
-    li $t0, 0       # Load immediate 0
-    sw $t0, -8($fp)
-    li $t0, 3       # Load immediate 3
-    sw $t0, -244($fp)
+    addiu $sp, $sp, -28  # Allocate space for locals and temps
+    li $t8, 1       # Load immediate 1
+    move $a0, $t8  # Param 0 ('1') to $a0
+    jal copy         # Call function copy
+    sw $v0, -8($fp)
+    li $t8, 1       # Load immediate 1
+    move $a0, $t8  # Param 0 ('1') to $a0
+    jal copy         # Call function copy
+    sw $v0, -12($fp)
+    lw $t0, -8($fp)       # Load from _t0 (-8($fp))
+    lw $t1, -12($fp)       # Load from _t1 (-12($fp))
+    seq $t2, $t0, $t1
+    sw $t2, -16($fp)
+    lw $t0, -16($fp)       # Load from _t2 (-16($fp))
+    beq $t0, $zero, _L0  # If _t2 is false (zero), goto _L0
+    li $v0, 4
+    la $a0, _str_lit_0
+    syscall
+    j _L1
 _L0:
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    lw $t1, -244($fp)       # Load from __main_size2_s2 (-244($fp))
-    slt $t2, $t0, $t1
-    sw $t2, -248($fp)
-    lw $t0, -248($fp)       # Load from _t28 (-248($fp))
-    beq $t0, $zero, _L1  # If _t28 is false (zero), goto _L1
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -252($fp)
-    la $t0, constArray1D # Load address of global constArray1D
-    lw $t1, -252($fp)       # Load from _t29 (-252($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -256($fp)
-    lw $t0, -256($fp)       # Load from _t30 (-256($fp))
-    lw $t1, 0($t0)        # Load value from address in _t30 (now in $t0)
-    sw $t1, -260($fp)
-    lw $t0, -240($fp)       # Load from __main_tmp_s2 (-240($fp))
-    lw $t1, -260($fp)       # Load from _t31 (-260($fp))
-    addu $t2, $t0, $t1
-    sw $t2, -264($fp)
-    lw $t0, -264($fp)       # Load from _t32 (-264($fp))
-    sw $t0, -240($fp)
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 1       # Load immediate 1
-    addu $t2, $t0, $t1
-    sw $t2, -268($fp)
-    lw $t0, -268($fp)       # Load from _t33 (-268($fp))
-    sw $t0, -8($fp)
-    j _L0
+    li $v0, 4
+    la $a0, _str_lit_1
+    syscall
 _L1:
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_0 # Address of string to print
+    li $t8, 2       # Load immediate 2
+    move $a0, $t8  # Param 0 ('2') to $a0
+    jal copy         # Call function copy
+    sw $v0, -20($fp)
+    li $t8, 3       # Load immediate 3
+    move $a0, $t8  # Param 0 ('3') to $a0
+    jal copy         # Call function copy
+    sw $v0, -24($fp)
+    lw $t0, -20($fp)       # Load from _t3 (-20($fp))
+    lw $t1, -24($fp)       # Load from _t4 (-24($fp))
+    seq $t2, $t0, $t1
+    sw $t2, -28($fp)
+    lw $t0, -28($fp)       # Load from _t5 (-28($fp))
+    beq $t0, $zero, _L2  # If _t5 is false (zero), goto _L2
+    li $v0, 4
+    la $a0, _str_lit_0
     syscall
-    lw $a0, -240($fp)       # Load from __main_tmp_s2 (-240($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_1 # Address of string to print
-    syscall
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -272($fp)
-    addiu $t0, $fp, -52  # Get address of __main_factorial_s2
-    lw $t1, -272($fp)       # Load from _t34 (-272($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -276($fp)
-    lw $t0, -276($fp)       # Load from _t35 (-276($fp))
-    li $t1, 1       # Load immediate 1
-    sw $t1, 0($t0)        # Store value 1 (in $t1) to address in _t35 (in $t0)
-    li $t0, 1       # Load immediate 1
-    sw $t0, -8($fp)
+    j _L3
 _L2:
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 10       # Load immediate 10
-    slt $t2, $t0, $t1
-    sw $t2, -280($fp)
-    lw $t0, -280($fp)       # Load from _t36 (-280($fp))
-    beq $t0, $zero, _L3  # If _t36 is false (zero), goto _L3
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -284($fp)
-    addiu $t0, $fp, -52  # Get address of __main_factorial_s2
-    lw $t1, -284($fp)       # Load from _t37 (-284($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -288($fp)
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 1       # Load immediate 1
-    subu $t2, $t0, $t1
-    sw $t2, -292($fp)
-    lw $t0, -292($fp)       # Load from _t39 (-292($fp))
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -296($fp)
-    addiu $t0, $fp, -52  # Get address of __main_factorial_s2
-    lw $t1, -296($fp)       # Load from _t40 (-296($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -300($fp)
-    lw $t0, -300($fp)       # Load from _t41 (-300($fp))
-    lw $t1, 0($t0)        # Load value from address in _t41 (now in $t0)
-    sw $t1, -304($fp)
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -308($fp)
-    addiu $t0, $fp, -92  # Get address of __main_number_s2
-    lw $t1, -308($fp)       # Load from _t43 (-308($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -312($fp)
-    lw $t0, -312($fp)       # Load from _t44 (-312($fp))
-    lw $t1, 0($t0)        # Load value from address in _t44 (now in $t0)
-    sw $t1, -316($fp)
-    lw $t0, -304($fp)       # Load from _t42 (-304($fp))
-    lw $t1, -316($fp)       # Load from _t45 (-316($fp))
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -320($fp)
-    lw $t0, -288($fp)       # Load from _t38 (-288($fp))
-    lw $t1, -320($fp)       # Load from _t46 (-320($fp))
-    sw $t1, 0($t0)        # Store value _t46 (in $t1) to address in _t38 (in $t0)
-    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
-    li $t1, 1       # Load immediate 1
-    addu $t2, $t0, $t1
-    sw $t2, -324($fp)
-    lw $t0, -324($fp)       # Load from _t47 (-324($fp))
-    sw $t0, -8($fp)
-    j _L2
+    li $v0, 4
+    la $a0, _str_lit_1
+    syscall
 _L3:
-    li $t0, 9       # Load immediate 9
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -328($fp)
-    addiu $t0, $fp, -52  # Get address of __main_factorial_s2
-    lw $t1, -328($fp)       # Load from _t48 (-328($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -332($fp)
-    lw $t0, -332($fp)       # Load from _t49 (-332($fp))
-    lw $t1, 0($t0)        # Load value from address in _t49 (now in $t0)
-    sw $t1, -336($fp)
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_2 # Address of string to print
-    syscall
-    lw $a0, -336($fp)       # Load from _t50 (-336($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_1 # Address of string to print
-    syscall
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -340($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -340($fp)       # Load from _t51 (-340($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -344($fp)
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -348($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -348($fp)       # Load from _t53 (-348($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -352($fp)
-    lw $t0, -352($fp)       # Load from _t54 (-352($fp))
-    lw $t1, 0($t0)        # Load value from address in _t54 (now in $t0)
-    sw $t1, -356($fp)
-    lw $t0, -356($fp)       # Load from _t55 (-356($fp))
-    li $t1, 1       # Load immediate 1
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -360($fp)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -364($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -364($fp)       # Load from _t57 (-364($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -368($fp)
-    lw $t0, -368($fp)       # Load from _t58 (-368($fp))
-    lw $t1, 0($t0)        # Load value from address in _t58 (now in $t0)
-    sw $t1, -372($fp)
-    lw $t0, -372($fp)       # Load from _t59 (-372($fp))
-    li $t1, 0       # Load immediate 0
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -376($fp)
-    lw $t0, -360($fp)       # Load from _t56 (-360($fp))
-    lw $t1, -376($fp)       # Load from _t60 (-376($fp))
-    addu $t2, $t0, $t1
-    sw $t2, -380($fp)
-    lw $t0, -344($fp)       # Load from _t52 (-344($fp))
-    lw $t1, -380($fp)       # Load from _t61 (-380($fp))
-    sw $t1, 0($t0)        # Store value _t61 (in $t1) to address in _t52 (in $t0)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -384($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -384($fp)       # Load from _t62 (-384($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -388($fp)
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -392($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -392($fp)       # Load from _t64 (-392($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -396($fp)
-    lw $t0, -396($fp)       # Load from _t65 (-396($fp))
-    lw $t1, 0($t0)        # Load value from address in _t65 (now in $t0)
-    sw $t1, -400($fp)
-    lw $t0, -400($fp)       # Load from _t66 (-400($fp))
-    li $t1, 0       # Load immediate 0
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -404($fp)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -408($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -408($fp)       # Load from _t68 (-408($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -412($fp)
-    lw $t0, -412($fp)       # Load from _t69 (-412($fp))
-    lw $t1, 0($t0)        # Load value from address in _t69 (now in $t0)
-    sw $t1, -416($fp)
-    lw $t0, -416($fp)       # Load from _t70 (-416($fp))
-    li $t1, 1       # Load immediate 1
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -420($fp)
-    lw $t0, -404($fp)       # Load from _t67 (-404($fp))
-    lw $t1, -420($fp)       # Load from _t71 (-420($fp))
-    addu $t2, $t0, $t1
-    sw $t2, -424($fp)
-    lw $t0, -388($fp)       # Load from _t63 (-388($fp))
-    lw $t1, -424($fp)       # Load from _t72 (-424($fp))
-    sw $t1, 0($t0)        # Store value _t72 (in $t1) to address in _t63 (in $t0)
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -428($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -428($fp)       # Load from _t73 (-428($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -432($fp)
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -436($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -436($fp)       # Load from _t75 (-436($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -440($fp)
-    lw $t0, -440($fp)       # Load from _t76 (-440($fp))
-    lw $t1, 0($t0)        # Load value from address in _t76 (now in $t0)
-    sw $t1, -444($fp)
-    lw $t0, -444($fp)       # Load from _t77 (-444($fp))
-    li $t1, 1       # Load immediate 1
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -448($fp)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -452($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -452($fp)       # Load from _t79 (-452($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -456($fp)
-    lw $t0, -456($fp)       # Load from _t80 (-456($fp))
-    lw $t1, 0($t0)        # Load value from address in _t80 (now in $t0)
-    sw $t1, -460($fp)
-    lw $t0, -460($fp)       # Load from _t81 (-460($fp))
-    li $t1, 0       # Load immediate 0
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -464($fp)
-    lw $t0, -448($fp)       # Load from _t78 (-448($fp))
-    lw $t1, -464($fp)       # Load from _t82 (-464($fp))
-    addu $t2, $t0, $t1
-    sw $t2, -468($fp)
-    lw $t0, -432($fp)       # Load from _t74 (-432($fp))
-    lw $t1, -468($fp)       # Load from _t83 (-468($fp))
-    sw $t1, 0($t0)        # Store value _t83 (in $t1) to address in _t74 (in $t0)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -472($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -472($fp)       # Load from _t84 (-472($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -476($fp)
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -480($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -480($fp)       # Load from _t86 (-480($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -484($fp)
-    lw $t0, -484($fp)       # Load from _t87 (-484($fp))
-    lw $t1, 0($t0)        # Load value from address in _t87 (now in $t0)
-    sw $t1, -488($fp)
-    lw $t0, -488($fp)       # Load from _t88 (-488($fp))
-    li $t1, 0       # Load immediate 0
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -492($fp)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -496($fp)
-    addiu $t0, $fp, -204  # Get address of __main_matrixMulFactor_s2
-    lw $t1, -496($fp)       # Load from _t90 (-496($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -500($fp)
-    lw $t0, -500($fp)       # Load from _t91 (-500($fp))
-    lw $t1, 0($t0)        # Load value from address in _t91 (now in $t0)
-    sw $t1, -504($fp)
-    lw $t0, -504($fp)       # Load from _t92 (-504($fp))
-    li $t1, 1       # Load immediate 1
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -508($fp)
-    lw $t0, -492($fp)       # Load from _t89 (-492($fp))
-    lw $t1, -508($fp)       # Load from _t93 (-508($fp))
-    addu $t2, $t0, $t1
-    sw $t2, -512($fp)
-    lw $t0, -476($fp)       # Load from _t85 (-476($fp))
-    lw $t1, -512($fp)       # Load from _t94 (-512($fp))
-    sw $t1, 0($t0)        # Store value _t94 (in $t1) to address in _t85 (in $t0)
-    li $t0, 0       # Load immediate 0
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -516($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -516($fp)       # Load from _t95 (-516($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -520($fp)
-    lw $t0, -520($fp)       # Load from _t96 (-520($fp))
-    lw $t1, 0($t0)        # Load value from address in _t96 (now in $t0)
-    sw $t1, -524($fp)
-    li $t0, 1       # Load immediate 1
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -528($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -528($fp)       # Load from _t98 (-528($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -532($fp)
-    lw $t0, -532($fp)       # Load from _t99 (-532($fp))
-    lw $t1, 0($t0)        # Load value from address in _t99 (now in $t0)
-    sw $t1, -536($fp)
-    lw $a0, -524($fp)       # Load from _t97 (-524($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_3 # Address of string to print
-    syscall
-    lw $a0, -536($fp)       # Load from _t100 (-536($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_1 # Address of string to print
-    syscall
-    li $t0, 2       # Load immediate 2
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -540($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -540($fp)       # Load from _t101 (-540($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -544($fp)
-    lw $t0, -544($fp)       # Load from _t102 (-544($fp))
-    lw $t1, 0($t0)        # Load value from address in _t102 (now in $t0)
-    sw $t1, -548($fp)
-    li $t0, 3       # Load immediate 3
-    li $t1, 4       # Load immediate 4
-    mult $t0, $t1
-    mflo $t2
-    sw $t2, -552($fp)
-    addiu $t0, $fp, -188  # Get address of __main_matrixMulResult_s2
-    lw $t1, -552($fp)       # Load from _t104 (-552($fp))
-    addu $t2, $t0, $t1    # Effective address = base + offset
-    sw $t2, -556($fp)
-    lw $t0, -556($fp)       # Load from _t105 (-556($fp))
-    lw $t1, 0($t0)        # Load value from address in _t105 (now in $t0)
-    sw $t1, -560($fp)
-    lw $a0, -548($fp)       # Load from _t103 (-548($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_3 # Address of string to print
-    syscall
-    lw $a0, -560($fp)       # Load from _t106 (-560($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_1 # Address of string to print
-    syscall
     li $v0, 0       # Load immediate 0
+    j _L_main_epilogue # Jump to epilogue on return val
 _L_main_epilogue:
-    move $sp, $fp         # Restore $sp to point to the location of the saved old $fp.
-    lw $ra, -4($sp)       # Restore $ra from saved_fp_location - 4.
-    lw $fp, 0($sp)        # Restore $fp from saved_fp_location.
-    addiu $sp, $sp, 8     # Pop the saved $fp and $ra from the stack.
-    li $v0, 10          # System call for exit
-    syscall             # Exit
+    move $sp, $fp
+    lw $ra, -4($sp)
+    lw $fp, 0($sp)
+    addiu $sp, $sp, 4
+    li $v0, 10
+    syscall
 

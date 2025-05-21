@@ -209,13 +209,15 @@ void MipsGenerator::generateTextSection() {
     mipsFile << ".globl main\n"; // MIPS convention, main is global entry
 
     int currentFuncArgIndex = 0;
+    int stackArgsSizeToCleanup = 0; // Track size of stack-passed arguments for cleanup
 
     for (const auto& quad : quads) {
         if (quad.op == "FUNC_BEGIN") {
             this->currentFunctionName = quad.arg1;
-            currentFuncArgIndex = 0;
-            tempVarOffsets.clear(); // Clear temps for new function
-            functionLocalTempSpace = 0; // Reset estimated temp space needed
+            currentFuncArgIndex = 0; // Reset for params of this function call if any
+            stackArgsSizeToCleanup = 0; // Reset for calls within this function
+            tempVarOffsets.clear(); 
+            functionLocalTempSpace = 0; 
 
             Symbol* funcSym = symTab.lookupSymbol(this->currentFunctionName);
             if (!funcSym) {
@@ -224,14 +226,11 @@ void MipsGenerator::generateTextSection() {
             }
 
             mipsFile << this->currentFunctionName << ":\n";
-            // Prologue: save $fp, $ra, set new $fp
             mipsFile << "    addiu $sp, $sp, -8  # Allocate space for old $fp and $ra\n";
             mipsFile << "    sw $fp, 4($sp)      # Save old frame pointer\n";
             mipsFile << "    sw $ra, 0($sp)      # Save return address\n";
             mipsFile << "    addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)\n";
 
-            // Allocate space for local variables and temporaries
-            // quad.arg2 should contain the total size needed (calculated by SyntaxAnalyzer)
             int localDataSize = 0;
             try {
                 if (!quad.arg2.empty() && quad.arg2 != "-") {
@@ -239,32 +238,25 @@ void MipsGenerator::generateTextSection() {
                 }
             } catch (const std::invalid_argument& ia) {
                 std::cerr << "Invalid argument for localDataSize: " << quad.arg2 << " for func " << this->currentFunctionName << std::endl;
-                localDataSize = 0;
             } catch (const std::out_of_range& oor) {
                 std::cerr << "OutOfRange argument for localDataSize: " << quad.arg2 << " for func " << this->currentFunctionName << std::endl;
-                localDataSize = 0;
             }
             if (localDataSize > 0) {
                 mipsFile << "    addiu $sp, $sp, -" << localDataSize << "  # Allocate space for locals and temps\n";
             }
             functionLocalTempSpace = localDataSize; 
 
-            // ******** REVISED CODE START: Populate tempVarOffsets for the current function ********
             if (symTab.functionLocalSymbols.count(this->currentFunctionName)) {
                 const std::vector<Symbol>& symbolsForFunction = symTab.functionLocalSymbols.at(this->currentFunctionName);
                 if (debugLogFile.is_open()) debugLogFile << "MIPS_DEBUG: Func '" << this->currentFunctionName 
                           << "', Loading " << symbolsForFunction.size() << " symbols from stored functionLocalSymbols (vector)." << std::endl;
-                for (const Symbol& symbolEntry : symbolsForFunction) {
+                for (const Symbol& symbolEntry : symbolsForFunction) { // Iterate directly over Symbol objects
                     const std::string& originalSymbolName = symbolEntry.name;
-                    
                     std::string keyForTempVarOffsets = originalSymbolName;
                     bool isIRGeneratedName = (originalSymbolName.length() > 0 && originalSymbolName[0] == '_');
-                    
                     if (!symbolEntry.isGlobal && !isIRGeneratedName && !this->currentFunctionName.empty()) {
                         keyForTempVarOffsets = "__" + this->currentFunctionName + "_" + originalSymbolName + "_s" + std::to_string(symbolEntry.scopeLevel);
                     }
-                    
-                    // ADDING DETAILED LOG HERE
                     if (debugLogFile.is_open()) debugLogFile << "MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='" << originalSymbolName 
                               << "', isGlobal=" << symbolEntry.isGlobal
                               << ", isIRGeneratedName=" << isIRGeneratedName 
@@ -273,120 +265,129 @@ void MipsGenerator::generateTextSection() {
                               << ", offset=" << symbolEntry.offset 
                               << ", type='" << symbolEntry.type << "'"
                               << (symbolEntry.isParam ? " (Param)" : "") << std::endl;
-
                     tempVarOffsets[keyForTempVarOffsets] = symbolEntry.offset;
-                    
-                    if (debugLogFile.is_open()) debugLogFile << "  -> Processed Symbol '" << originalSymbolName 
-                              << "' (ScopeLvl: " << symbolEntry.scopeLevel << ") into IR name '" << keyForTempVarOffsets << "'"
-                              << ", Offset: " << symbolEntry.offset 
-                              << ", Type: " << symbolEntry.type
-                              << (symbolEntry.isParam ? " (Param)" : "") << std::endl;
                 }
             } else {
-                if (debugLogFile.is_open()) debugLogFile << "MIPS_GEN_WARNING: Function '" << this->currentFunctionName 
-                          << "' not found in symTab.functionLocalSymbols map (or vector)." << std::endl;
+                 if (debugLogFile.is_open()) debugLogFile << "MIPS_GEN_WARNING: Function '" << this->currentFunctionName 
+                          << "' not found in symTab.functionLocalSymbols map (vector)." << std::endl;
             }
-            // ******** REVISED CODE END ********
 
-            // Store parameters from registers $a0-$a3 to their stack slots if any (positive offsets from $fp)
-            // This depends on calling convention and how SyntaxAnalyzer represents params.
-            // If params are in sym->offset as positive values (e.g., 8, 12, 16, 20 for $a0-$a3 relative to $fp where $fp points to old $fp)
             if (funcSym && !funcSym->params.empty()) {
                 mipsFile << "    # MIPS_DEBUG: Processing params for func: " << this->currentFunctionName << "\n";
-                mipsFile << "    # MIPS_DEBUG: funcSym->params.size() = " << funcSym->params.size() << "\n";
 
-                for (size_t i = 0; i < funcSym->params.size() && i < 4; ++i) {
-                    const auto& paramInfo = funcSym->params[i]; // pair<string name, string type>
-                    mipsFile << "    # MIPS_DEBUG: Param loop iter " << i << ", Name: " << paramInfo.first << ", Type: " << paramInfo.second << "\n";
-                    
-                    // We need to look up the parameter symbol within its function's scope to get the correct one.
-                    // Assuming currentFunctionName holds the correct name of the function being processed.
-                    Symbol* paramSym = symTab.lookupSymbol(paramInfo.first, false, this->currentFunctionName);
-                    
-                    if (paramSym) {
-                        mipsFile << "    # MIPS_DEBUG: Found paramSym for '" << paramInfo.first << "' in scope '" << this->currentFunctionName 
-                                 << "', Offset: " << paramSym->offset 
-                                 << ", IsParam: " << paramSym->isParam << "\n";
-                        // Ensure it's marked as param AND has a valid stack offset (positive for params)
-                        if (paramSym->isParam && paramSym->offset > 0) { 
-                        mipsFile << "    sw $a" << i << ", " << paramSym->offset << "($fp)  # Store param " << paramSym->name << " from $a" << i << " to stack\n";
+                // Step 1: Handle stack-passed parameters first to avoid overwriting them
+                // before they are moved to their final designated slots.
+                mipsFile << "    # Step 1: Secure stack-passed parameters by moving them to final slots\n";
+                for (size_t i = 0; i < funcSym->params.size(); ++i) {
+                    if (i >= 4) { // Parameters passed on stack by caller
+                        const auto& paramInfo = funcSym->params[i];
+                        int paramScopeLevel = symTab.functionScopeLevels.count(this->currentFunctionName) ? symTab.functionScopeLevels.at(this->currentFunctionName) : funcSym->scopeLevel + 1;
+                        std::string mangledParamName = "__" + this->currentFunctionName + "_" + paramInfo.first + "_s" + std::to_string(paramScopeLevel);
+                        
+                        int targetOffset = (i + 1) * 4; // Default calculation, should match symbol table
+                        Symbol* paramSym = symTab.lookupSymbol(paramInfo.first, false, this->currentFunctionName);
+                        if (paramSym && paramSym->isParam && tempVarOffsets.count(mangledParamName)) {
+                            targetOffset = tempVarOffsets[mangledParamName]; 
+                        } else if (paramSym && paramSym->isParam) {
+                            targetOffset = paramSym->offset; 
                         } else {
-                            mipsFile << "    # MIPS_DEBUG: Param '" << paramInfo.first << "' conditions not met. Offset: " 
-                                     << paramSym->offset << ", IsParam: " << paramSym->isParam << "\n";
+                             if(debugLogFile.is_open()) debugLogFile << "MIPS_GEN_ERROR: Param symbol '" << paramInfo.first << "' not found or tempVarOffsets issue for " << this->currentFunctionName << " in param pre-saving step." << std::endl;
                         }
-                    } else {
-                        mipsFile << "    # MIPS_DEBUG: Could not find paramSym for '" << paramInfo.first << "' in scope '" << this->currentFunctionName << "'.\n";
+
+                        // Corrected calculation for actual_stack_loc_offset
+                        int numTotalParams = funcSym->params.size();
+                        int numStackParams = numTotalParams >= 4 ? numTotalParams - 4 : 0;
+                        int param_list_stack_index = (int)i - 4; // 0-indexed: 0 for 5th param, 1 for 6th, etc.
+                        // stack_order_from_fp_base (0 is closest to $fp, i.e., $fp+4)
+                        // The last param in list (e.g. 6th param, i=5) is closest to $fp at $fp+4
+                        // The first stack param in list (e.g. 5th param, i=4) is further, at $fp+8 (if 2 stack params)
+                        int stack_order_from_fp_base = (numStackParams - 1) - param_list_stack_index;
+                        int actual_stack_loc_offset = (stack_order_from_fp_base + 1) * 4;
+
+                        mipsFile << "    # Param " << paramInfo.first << " (orig at " << actual_stack_loc_offset << "($fp)) -> final slot " << targetOffset << "($fp)\n";
+                        mipsFile << "    lw $t0, " << actual_stack_loc_offset << "($fp)    # Load stack-passed param '" << paramInfo.first << "' from its initial position\n";
+                        mipsFile << "    sw $t0, " << targetOffset << "($fp)    # Store param '" << paramInfo.first << "' to its designated final stack slot\n";
                     }
                 }
-            } else {
-                mipsFile << "    # MIPS_DEBUG: No params to process for " << this->currentFunctionName 
-                         << " (funcSym=" << (funcSym ? "valid" : "null") 
-                         << ", params.empty()=" << (funcSym ? (funcSym->params.empty() ? "true" : "false") : "N/A") 
-                         << ")\n";
+
+                // Step 2: Handle register-passed parameters
+                mipsFile << "    # Step 2: Store register-passed parameters to their final slots\n";
+                for (size_t i = 0; i < funcSym->params.size(); ++i) {
+                    if (i < 4) { // Parameters passed in $a0-$a3
+                        const auto& paramInfo = funcSym->params[i];
+                        int paramScopeLevel = symTab.functionScopeLevels.count(this->currentFunctionName) ? symTab.functionScopeLevels.at(this->currentFunctionName) : funcSym->scopeLevel + 1;
+                        std::string mangledParamName = "__" + this->currentFunctionName + "_" + paramInfo.first + "_s" + std::to_string(paramScopeLevel);
+                        
+                        int targetOffset = (i + 1) * 4; // Default calculation
+                        Symbol* paramSym = symTab.lookupSymbol(paramInfo.first, false, this->currentFunctionName);
+                        if (paramSym && paramSym->isParam && tempVarOffsets.count(mangledParamName)) {
+                            targetOffset = tempVarOffsets[mangledParamName];
+                        } else if (paramSym && paramSym->isParam) {
+                            targetOffset = paramSym->offset;
+                        } else {
+                            if(debugLogFile.is_open()) debugLogFile << "MIPS_GEN_ERROR: Param symbol '" << paramInfo.first << "' not found or tempVarOffsets issue for " << this->currentFunctionName << " in register param storing step." << std::endl;
+                        }
+
+                        mipsFile << "    sw $a" << i << ", " << targetOffset << "($fp)  # Store register param '" << paramInfo.first << "' (from $a" << i << ") to its designated stack slot\n";
+                    }
+                }
             }
 
         } else if (quad.op == "FUNC_END") {
-            mipsFile << "_L_" << this->currentFunctionName << "_epilogue:\n"; // Define the epilogue label
-            // Epilogue: restore $sp, $fp, $ra, return
-
-            // Corrected Epilogue (consistent with old version and typical MIPS convention)
-            // Assumes $fp points to the stack slot containing the *saved old $fp*.
-            // And $ra was saved at $fp-4.
-            // Local variables were allocated at $fp-8, $fp-12, etc. or by moving $sp further down.
-
-            // First, ensure $sp is at the base of the local/temp variable area, right below where $ra and old $fp are saved.
-            // If localDataSize was used to decrement $sp from $fp (after $fp was set up to point to old_fp_slot),
-            // then $sp needs to be brought back up to $fp before restoring $ra and $fp.
-            // The most straightforward way to deallocate locals/temps and prepare for $ra/$fp restore:
-            mipsFile << "    move $sp, $fp         # Restore $sp to point to the location of the saved old $fp.\n";
-                                                 // This effectively deallocates all locals/temps that were between the current $sp and $fp.
-
-            mipsFile << "    lw $ra, -4($sp)       # Restore $ra from saved_fp_location - 4.\n";
-            mipsFile << "    lw $fp, 0($sp)        # Restore $fp from saved_fp_location.\n";
-            mipsFile << "    addiu $sp, $sp, 8     # Pop the saved $fp and $ra from the stack.\n";
-
+            mipsFile << "_L_" << this->currentFunctionName << "_epilogue:\n";
+            mipsFile << "    move $sp, $fp\n";
+            mipsFile << "    lw $ra, -4($sp)\n";
+            mipsFile << "    lw $fp, 0($sp)\n";
+            mipsFile << "    addiu $sp, $sp, 4\n";
             if (this->currentFunctionName == "main") {
-                mipsFile << "    li $v0, 10          # System call for exit\n";
-                mipsFile << "    syscall             # Exit\n";
+                mipsFile << "    li $v0, 10\n";
+                mipsFile << "    syscall\n";
             } else {
-                mipsFile << "    jr $ra              # Return from function\n";
+                mipsFile << "    jr $ra\n";
             }
-            mipsFile << "\n"; // Blank line after function for readability
+            mipsFile << "\n";
         } else if (quad.op == "PARAM") {
-            // Load actual parameter value into $a0-$a3 or push onto stack for >4 params
-            // For SysY, assuming params are expressions evaluated to temps or are existing vars.
+            loadToReg(quad.arg1, "$t8"); // Load param value into a temp reg first
             if (currentFuncArgIndex < 4) {
-                loadToReg(quad.arg1, "$t8"); // Load param value into a temp reg first
-                mipsFile << "    move $a" << currentFuncArgIndex << ", $t8  # Param " << currentFuncArgIndex << ": " << quad.arg1 << "\n";
+                mipsFile << "    move $a" << currentFuncArgIndex << ", $t8  # Param " << currentFuncArgIndex << " ('" << quad.arg1 << "') to $a" << currentFuncArgIndex << "\n";
             } else {
-                // Stack passing for 5th+ param (SysY spec might not require this for basic version)
-                // If needed: loadToReg(quad.arg1, "$t8"); mipsFile << "    sw $t8, -offset($sp) # push on stack\n"; mipsFile << "    addiu $sp, $sp, -4\n";
-                // For now, assume <= 4 params or it's an error/unsupported.
-                if (debugLogFile.is_open()) debugLogFile << "Warning: More than 4 parameters not fully supported for MIPS stack passing in this version (param: " << quad.arg1 << ")" << std::endl;
+                // 参数 >= 4，压入调用栈
+                mipsFile << "    addiu $sp, $sp, -4     # Make space on stack for param '" << quad.arg1 << "'\n";
+                mipsFile << "    sw $t8, 0($sp)         # Push stack param " << quad.arg1 << "\n";
+                stackArgsSizeToCleanup += 4; // 记录为此调用压栈的总大小
             }
             currentFuncArgIndex++;
         } else if (quad.op == "CALL") {
             mipsFile << "    jal " << quad.arg1 << "         # Call function " << quad.arg1 << "\n";
-            currentFuncArgIndex = 0; // Reset for next call
-            if (!quad.result.empty() && quad.result != "-") { // If function has a return value to be stored
+            
+            // 调用返回后，清理为栈参数分配的空间
+            if (stackArgsSizeToCleanup > 0) {
+                mipsFile << "    addiu $sp, $sp, " << stackArgsSizeToCleanup << "  # Clean up " << stackArgsSizeToCleanup/4 << " stack arguments after call to " << quad.arg1 << "\n";
+                stackArgsSizeToCleanup = 0; // 为下一次调用重置
+            }
+
+            currentFuncArgIndex = 0; // Reset for next call's params
+            if (!quad.result.empty() && quad.result != "-") { 
                 storeFromReg("$v0", quad.result);
             }
         } else if (quad.op == "RETURN_VAL") {
             if (!quad.arg1.empty() && quad.arg1 != "-") {
-                loadToReg(quad.arg1, "$v0"); // Load return value into $v0
+                loadToReg(quad.arg1, "$v0");
             }
-            // Actual `jr $ra` is handled by FUNC_END based on function name
+            mipsFile << "    j _L_" << this->currentFunctionName << "_epilogue # Jump to epilogue on return val\n";
+        } else if (quad.op == "RETURN_VOID") {
+             mipsFile << "    j _L_" << this->currentFunctionName << "_epilogue # Handle RETURN_VOID by jumping to epilogue\n";
         } else if (quad.op == "GOTO") {
             mipsFile << "    j " << quad.result << "\n";
         } else if (quad.op == "IF_TRUE_GOTO") {
-            loadToReg(quad.arg1, "$t0"); // Load condition into $t0
+            loadToReg(quad.arg1, "$t0");
             mipsFile << "    bne $t0, $zero, " << quad.result << "  # If " << quad.arg1 << " is true (not zero), goto " << quad.result << "\n";
         } else if (quad.op == "IF_FALSE_GOTO") {
-            loadToReg(quad.arg1, "$t0"); // Load condition into $t0
+            loadToReg(quad.arg1, "$t0");
             mipsFile << "    beq $t0, $zero, " << quad.result << "  # If " << quad.arg1 << " is false (zero), goto " << quad.result << "\n";
-        } else if (quad.op[0] == '_' && quad.op[1] == 'L' && quad.op.back() == ':') { // Label definition e.g. _L1:
-             mipsFile << quad.op << "\n"; // Quad.op is the label itself like "_L1:"
-        } else if (quad.op.back() == ':') { // Any other label definition, e.g. user-defined if allowed, or loop labels etc.
+        } else if (quad.op[0] == '_' && quad.op[1] == 'L' && quad.op.back() == ':') { 
+             mipsFile << quad.op << "\n";
+        } else if (quad.op.back() == ':') { 
             mipsFile << quad.op << "\n";
         } else if (quad.op == "ASSIGN") {
             loadToReg(quad.arg1, "$t0");
@@ -404,110 +405,50 @@ void MipsGenerator::generateTextSection() {
             else if (quad.op == "AND") mipsFile << "    and $t2, $t0, $t1\n";
             else if (quad.op == "OR")  mipsFile << "    or $t2, $t0, $t1\n";
             else if (quad.op == "LSS") mipsFile << "    slt $t2, $t0, $t1\n";
-            else if (quad.op == "LEQ") { mipsFile << "    sgt $t2, $t0, $t1\n"; mipsFile << "    xori $t2, $t2, 1\n";} // t2 = !(t0 > t1)
+            else if (quad.op == "LEQ") { mipsFile << "    sgt $t2, $t0, $t1\n"; mipsFile << "    xori $t2, $t2, 1\n";}
             else if (quad.op == "GRE") mipsFile << "    sgt $t2, $t0, $t1\n";
-            else if (quad.op == "GEQ") { mipsFile << "    slt $t2, $t0, $t1\n"; mipsFile << "    xori $t2, $t2, 1\n";} // t2 = !(t0 < t1)
+            else if (quad.op == "GEQ") { mipsFile << "    slt $t2, $t0, $t1\n"; mipsFile << "    xori $t2, $t2, 1\n";}
             else if (quad.op == "EQL") { mipsFile << "    seq $t2, $t0, $t1\n";}
             else if (quad.op == "NEQ") { mipsFile << "    sne $t2, $t0, $t1\n";}
             storeFromReg("$t2", quad.result);
-        } else if (quad.op == "NOT_OP") { // Logical NOT or bitwise NOT? Assume logical for now.
+        } else if (quad.op == "NOT_OP") {
             loadToReg(quad.arg1, "$t0");
-            mipsFile << "    seq $t2, $t0, $zero   # $t2 = (arg1 == 0) ? 1 : 0 \n"; // Logical NOT
+            mipsFile << "    seq $t2, $t0, $zero   # $t2 = (arg1 == 0) ? 1 : 0 \n";
             storeFromReg("$t2", quad.result);
-        } else if (quad.op == "NEG_OP") { // Unary minus
+        } else if (quad.op == "NEG_OP" || quad.op == "NEG") { // Consolidate NEG and NEG_OP
             loadToReg(quad.arg1, "$t0");
             mipsFile << "    subu $t2, $zero, $t0\n";
             storeFromReg("$t2", quad.result);
-        } else if (quad.op == "NEG") {
-            // Quad: (NEG, arg1, _, result) -> result = -arg1
-            std::string arg1_operand = quad.arg1;
-            std::string result_operand = quad.result;
-
-            // Determine if arg1 is an immediate or a variable/temp
-            if (isIntegerImmediate(arg1_operand)) {
-                mipsFile << "    li $t0, " << arg1_operand << "         # Load immediate " << arg1_operand << " into $t0\n";
-            } else {
-                // It's a variable/temp, load its value from memory
-                loadToReg(arg1_operand, "$t0"); // loadToReg handles getting memory address via getMipsOperand
-            }
-
-            // Perform negation: result_reg = 0 - $t0
-            mipsFile << "    subu $t1, $zero, $t0   # $t1 = - $t0 (negation)\n";
-
-            // Store the result from $t1 into the memory location for 'result_operand'
-            storeFromReg("$t1", result_operand);
         } else if (quad.op == "ADD_OFFSET") {
-            // quad.arg1 = base name (global array, or mangled local array name)
-            // quad.arg2 = offset in bytes (constant or temp var)
-            // quad.result = result address temp var
-
-            // 1. Get base address of quad.arg1 into $t0
-            // getMipsOperand with loadAddr=true will:
-            // - For global array: output 'la $t0, array_label'
-            // - For local array (mangled name): output 'addiu $t0, $fp, array_offset'
             getMipsOperand(quad.arg1, "$t0", true);
-
-            // 2. Load offset (in bytes) from quad.arg2 into $t1
             loadToReg(quad.arg2, "$t1");
-
-            // 3. Calculate effective address: $t2 = $t0 (base_addr) + $t1 (offset_bytes)
-            mipsFile << "    addu $t2, $t0, $t1    # Effective address = base + offset\n";
-
-            // 4. Store the calculated effective address (from $t2) into the stack slot for quad.result
+            mipsFile << "    addu $t2, $t0, $t1    # Effective address = base ('" << quad.arg1 << "') + offset ('" << quad.arg2 << "')\n";
             storeFromReg("$t2", quad.result);
-
         } else if (quad.op == "LOAD_FROM_ADDR") {
-            // quad.arg1 = Source address (temporary variable holding an address)
-            // quad.arg2 = Unused ("_")
-            // quad.result = Destination variable (to store the loaded value)
-            
-            // 1. Load the value of address_temp (which is an address) into $t0
-            loadToReg(quad.arg1, "$t0"); // $t0 now holds the memory address M
-            
-            // 2. Load word from memory location M (held in $t0) into $t1
-            mipsFile << "    lw $t1, 0($t0)        # Load value from address in " << quad.arg1 << " (now in $t0)\n";
-            
-            // 3. Store the loaded value (from $t1) into the stack slot for quad.result
+            loadToReg(quad.arg1, "$t0"); 
+            mipsFile << "    lw $t1, 0($t0)        # Load value from address in '" << quad.arg1 << "' (now in $t0)\n";
             storeFromReg("$t1", quad.result);
-            
         } else if (quad.op == "STORE_TO_ADDR") {
-            // quad.arg1 = Destination address (temporary variable holding an address)
-            // quad.arg2 = Unused ("_")
-            // quad.result = Source value (temporary variable or constant to be stored)
-
-            // 1. Load the value of address_temp (quad.arg1, which is an address) into $t0
-            loadToReg(quad.arg1, "$t0"); // $t0 now holds the target memory address M
-
-            // 2. Load the value to be stored (quad.result) into $t1
-            loadToReg(quad.result, "$t1"); // $t1 now holds the value V to be stored
-
-            // 3. Store word V (from $t1) into memory location M (pointed to by $t0)
-            mipsFile << "    sw $t1, 0($t0)        # Store value " << quad.result << " (in $t1) to address in " << quad.arg1 << " (in $t0)\n";
-
+            loadToReg(quad.arg1, "$t0"); 
+            loadToReg(quad.result, "$t1"); 
+            mipsFile << "    sw $t1, 0($t0)        # Store value '" << quad.result << "' (in $t1) to address in '" << quad.arg1 << "' (in $t0)\n";
         } else if (quad.op == "PRINT_STR") {
-            Symbol* strSym = symTab.lookupSymbol(quad.arg1); // quad.arg1 is label of string like _str_lit_0
+            Symbol* strSym = symTab.lookupSymbol(quad.arg1);
             if (strSym && strSym->type == "string_literal") {
-                mipsFile << "    li $v0, 4           # System call for print_string\n";
-                mipsFile << "    la $a0, " << strSym->name << " # Address of string to print\n";
+                mipsFile << "    li $v0, 4\n";
+                mipsFile << "    la $a0, " << strSym->name << "\n";
                 mipsFile << "    syscall\n";
             } else {
                 if (debugLogFile.is_open()) debugLogFile << "MIPS Gen Error: String literal " << quad.arg1 << " not found for PRINT_STR." << std::endl;
             }
         } else if (quad.op == "PRINT_INT") {
-            loadToReg(quad.arg1, "$a0"); // Value to print in $a0
-            mipsFile << "    li $v0, 1           # System call for print_int\n";
+            loadToReg(quad.arg1, "$a0");
+            mipsFile << "    li $v0, 1\n";
             mipsFile << "    syscall\n";
-             // Removed automatic newline printing after int to match user's mips.txt behavior
-            // mipsFile << "    li $v0, 4           # System call for print_string\n";
-            // mipsFile << "    la $a0, _newline    # Address of newline string\n";
-            // mipsFile << "    syscall\n";
         } else if (quad.op == "GET_INT") {
-            // mipsFile << "    li $v0, 4           # print_string syscall for prompt\n";
-            // mipsFile << "    la $a0, _prompt     # load address of prompt string\n";
-            // mipsFile << "    syscall\n";
-            mipsFile << "    li $v0, 5           # System call for read_int\n";
-            mipsFile << "    syscall             # Integer read into $v0\n";
-            storeFromReg("$v0", quad.result); // Store result from $v0 to destination
+            mipsFile << "    li $v0, 5\n";
+            mipsFile << "    syscall\n";
+            storeFromReg("$v0", quad.result);
         } else {
             mipsFile << "    # Unknown Quad: (" << quad.op << ", " << quad.arg1 << ", " << quad.arg2 << ", " << quad.result << ")\n";
         }
