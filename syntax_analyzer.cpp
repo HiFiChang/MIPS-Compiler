@@ -537,9 +537,33 @@ std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym) {
                 std::string indexStr = std::to_string(elementIndex);
                 std::string elementSize = "4";
                 std::string offsetBytesTemp = irGen.newTemp();
+
+                Symbol tempSymbolOffset_init;
+                tempSymbolOffset_init.name = offsetBytesTemp;
+                tempSymbolOffset_init.type = "int";
+                tempSymbolOffset_init.isConstant = false;
+                tempSymbolOffset_init.isArray = false;
+                tempSymbolOffset_init.scopeLevel = symTab.currentScopeLevel;
+                tempSymbolOffset_init.isGlobal = (symTab.currentScopeLevel == 1);
+                if (!symTab.addSymbol(tempSymbolOffset_init)) {
+                    semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in InitVal.");
+                }
+
                 irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
 
                 std::string effectiveAddressTemp = irGen.newTemp();
+                
+                Symbol tempSymbolAddr_init;
+                tempSymbolAddr_init.name = effectiveAddressTemp;
+                tempSymbolAddr_init.type = "int_addr"; // Indicate it holds an address
+                tempSymbolAddr_init.isConstant = false;
+                tempSymbolAddr_init.isArray = false;
+                tempSymbolAddr_init.scopeLevel = symTab.currentScopeLevel;
+                tempSymbolAddr_init.isGlobal = (symTab.currentScopeLevel == 1);
+                if (!symTab.addSymbol(tempSymbolAddr_init)) {
+                    semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in InitVal.");
+                }
+
                 irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
                 irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal);
             } else {
@@ -554,11 +578,34 @@ std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym) {
                     std::string indexStr = std::to_string(elementIndex);
                     std::string elementSize = "4";
                     std::string offsetBytesTemp = irGen.newTemp();
+
+                    Symbol tempSymbolOffset_init2;
+                    tempSymbolOffset_init2.name = offsetBytesTemp;
+                    tempSymbolOffset_init2.type = "int";
+                    tempSymbolOffset_init2.isConstant = false;
+                    tempSymbolOffset_init2.isArray = false;
+                    tempSymbolOffset_init2.scopeLevel = symTab.currentScopeLevel;
+                    tempSymbolOffset_init2.isGlobal = (symTab.currentScopeLevel == 1);
+                    if (!symTab.addSymbol(tempSymbolOffset_init2)) {
+                        semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in InitVal (loop).");
+                    }
+
                     irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
 
                     std::string effectiveAddressTemp = irGen.newTemp();
+
+                    Symbol tempSymbolAddr_init2;
+                    tempSymbolAddr_init2.name = effectiveAddressTemp;
+                    tempSymbolAddr_init2.type = "int_addr"; // Indicate it holds an address
+                    tempSymbolAddr_init2.isConstant = false;
+                    tempSymbolAddr_init2.isArray = false;
+                    tempSymbolAddr_init2.scopeLevel = symTab.currentScopeLevel;
+                    tempSymbolAddr_init2.isGlobal = (symTab.currentScopeLevel == 1);
+                    if (!symTab.addSymbol(tempSymbolAddr_init2)) {
+                        semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in InitVal (loop).");
+                    }
+
                     irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
-                    irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal);
                 } else {
                      semanticError("Too many initializers for array '" + varSym.name + "'.");
                 }
@@ -989,77 +1036,80 @@ void SyntaxAnalyzer::parseStmt() {
         parseBlock(true); // Provide isNewScope argument
     } else if (currentToken.type == SEMICN) { // Empty statement
         match(SEMICN);
-    } else {
-        // 判断是LVal '=' ... 还是 Exp ';'
-        // This lookahead logic is tricky. A more robust way is full backtracking or LL(k)
-        // For now, let's try to parse LVal and see if '=' follows.
-        // Store state for potential backtrack if it's an Exp, not LVal = ...
-        int preLValPos = tokenIndex -1; // currentToken is the first token of potential LVal
-        Token preLValToken = currentToken;
+    } else if (currentToken.type == IDENFR) { // Statement starts with an Identifier
+        const auto& allTokens = lexer.getTokens();
+        // tokenIndex is the index of the *next* token to be fetched.
+        // So, allTokens[tokenIndex] is the token immediately after currentToken.
+        Token peekNext = (tokenIndex < allTokens.size()) ? allTokens[tokenIndex] : Token{TOKEN_EOF, "", 0};
 
-
-        bool isArrayAccessLVal;
-        std::string arrayIndexValueTemp_unused; // parseLVal no longer primarily uses this for an address temp return
-        
-        // parseLVal now returns:
-        // - Mangled name for scalar variable (e.g., __main_x, g_var) for direct assignment/use.
-        // - Temp name holding address for array element (e.g., _t1 which holds address of arr[i]) for indirect assignment via STORE_TO_ADDR.
-        std::string lvalTarget = parseLVal(isArrayAccessLVal, arrayIndexValueTemp_unused, true /*isAssignmentLHS=true*/);
-
-        if (currentToken.type == ASSIGN) {
-            match(ASSIGN);
-            if (currentToken.type == GETINTTK) {
-                match(GETINTTK);
-                match(LPARENT);
-                match(RPARENT);
-                
-                std::string getintResultTemp = irGen.newTemp();
-                // Add symbol for the getint result temporary
-                Symbol tempSymbolGetint;
-                tempSymbolGetint.name = getintResultTemp;
-                tempSymbolGetint.type = "int"; 
-                tempSymbolGetint.isConstant = false;
-                tempSymbolGetint.isArray = false;
-                tempSymbolGetint.scopeLevel = symTab.currentScopeLevel;
-                tempSymbolGetint.isGlobal = (symTab.currentScopeLevel == 1);
-                if (!symTab.addSymbol(tempSymbolGetint)) {
-                     semanticError("Failed to add temporary variable " + getintResultTemp + " for getint result to symbol table.");
-                }
-                irGen.addQuad("GET_INT", "_", "_", getintResultTemp);
-
-                if(isArrayAccessLVal) {
-                    // lvalTarget is the temporary variable holding the *address* of the array element.
-                    // We need to store the value from getintResultTemp to this address.
-                    irGen.addQuad("STORE_TO_ADDR", lvalTarget /*address_temp*/, "_", getintResultTemp /*value_temp*/);
-                } else { 
-                    // lvalTarget is the (mangled) name of the scalar variable.
-                    irGen.addQuad("ASSIGN", getintResultTemp, "_", lvalTarget); 
-                }
-
-            } else { // Regular Exp assignment: LVal = Exp;
-                std::string rhsVal = parseExp("int"); 
-                if (isArrayAccessLVal) {
-                    // lvalTarget is the temporary variable holding the *address* of the array element.
-                    // rhsVal is the temporary/constant holding the value from the expression.
-                    // We need to store rhsVal to the address in lvalTarget.
-                    irGen.addQuad("STORE_TO_ADDR", lvalTarget /*address_temp*/, "_", rhsVal /*value_temp*/);
-                } else {
-                    // lvalTarget is the (mangled) name of the scalar variable.
-                    irGen.addQuad("ASSIGN", rhsVal, "_", lvalTarget);
-                }
-            }
+        if (peekNext.type == LPARENT) { // Likely a function call, e.g., ident(...);
+            // Parse as an expression. parseUnaryExp will handle the function call.
+            // The result of the expression (if any) is discarded for a statement.
+            parseExp("int"); // Or "void" if function calls can be expressions of type void
             match(SEMICN);
-        } else { // Not an assignment, so it must have been an Exp (which might start with an LVal)
-            // Backtrack: Reset token stream to before LVal was parsed
-            tokenIndex = preLValPos;
-            getNextTokenFromLexer(); // Reload currentToken to be preLValToken
+            // recordSyntaxOutput("<Stmt_FuncCall>"); // Or let the generic <Stmt> be recorded later
+        } else { 
+            // Not ident(...), so it could be LVal = Exp; or LVal = getint(); 
+            // or potentially a bare LVal as an Exp (though less common as a full statement).
+            // Fall back to the original LVal-first speculative parsing.
+            int preLValPos = tokenIndex -1; // currentToken is the first token of potential LVal
+            Token preLValToken = currentToken;
 
-            // Now parse as a standalone expression (which might be empty for just ';')
-            if (currentToken.type != SEMICN) { // If not an empty statement
-                 parseExp("int"); // Provide default expectedType. Result is unused for statement Exp.
+            bool isArrayAccessLVal;
+            std::string arrayIndexValueTemp_unused; 
+            
+            std::string lvalTarget = parseLVal(isArrayAccessLVal, arrayIndexValueTemp_unused, true /*isAssignmentLHS=true*/);
+
+            if (currentToken.type == ASSIGN) {
+                match(ASSIGN);
+                if (currentToken.type == GETINTTK) {
+                    match(GETINTTK);
+                    match(LPARENT);
+                    match(RPARENT);
+                    
+                    std::string getintResultTemp = irGen.newTemp();
+                    Symbol tempSymbolGetint;
+                    tempSymbolGetint.name = getintResultTemp;
+                    tempSymbolGetint.type = "int"; 
+                    tempSymbolGetint.isConstant = false;
+                    tempSymbolGetint.isArray = false;
+                    tempSymbolGetint.scopeLevel = symTab.currentScopeLevel;
+                    tempSymbolGetint.isGlobal = (symTab.currentScopeLevel == 1);
+                    if (!symTab.addSymbol(tempSymbolGetint)) {
+                         semanticError("Failed to add temporary variable " + getintResultTemp + " for getint result to symbol table.");
+                    }
+                    irGen.addQuad("GET_INT", "_", "_", getintResultTemp);
+
+                    if(isArrayAccessLVal) {
+                        irGen.addQuad("STORE_TO_ADDR", lvalTarget /*address_temp*/, "_", getintResultTemp /*value_temp*/);
+                    } else { 
+                        irGen.addQuad("ASSIGN", getintResultTemp, "_", lvalTarget); 
+                    }
+                } else { // Regular Exp assignment: LVal = Exp;
+                    std::string rhsVal = parseExp("int"); 
+                    if (isArrayAccessLVal) {
+                        irGen.addQuad("STORE_TO_ADDR", lvalTarget /*address_temp*/, "_", rhsVal /*value_temp*/);
+                    } else {
+                        irGen.addQuad("ASSIGN", rhsVal, "_", lvalTarget);
+                    }
+                }
+                match(SEMICN);
+            } else { // Not an assignment, so it must have been an Exp (which might start with an LVal)
+                tokenIndex = preLValPos;
+                getNextTokenFromLexer(); 
+
+                if (currentToken.type != SEMICN) { 
+                     parseExp("int"); 
+                }
+                match(SEMICN);
             }
-            match(SEMICN);
         }
+    } else { // Statement does not start with a specific keyword or IDENFR
+             // Could be an expression starting with '(', or a number, etc. or just ';'
+        if (currentToken.type != SEMICN) { // If not an empty statement
+             parseExp("int"); // Result is unused for statement Exp.
+        }
+        match(SEMICN); // All valid statements (or expression statements) end with ';'
     }
     recordSyntaxOutput("<Stmt>"); // This is a generic Stmt tag, specific tags added above.
 }
@@ -1138,7 +1188,7 @@ std::string SyntaxAnalyzer::parseMulExp(const std::string& expectedType) {
         }
 
         std::string opStr;
-        if (opToken == MULT) opStr = "MULT";
+        if (opToken == MULT) opStr = "MUL";
         else if (opToken == DIV) opStr = "DIV";
         else opStr = "MOD";
         irGen.addQuad(opStr, leftOperand, rightOperand, resultTempName);
@@ -1699,9 +1749,33 @@ std::string SyntaxAnalyzer::parseLVal(bool& isArrayAccess, std::string& arrayInd
         // effective_addr_temp = ADD_OFFSET base_name_for_IR, (index_exp_val * element_size)
         std::string elementSize = "4"; // Assuming int arrays (word size)
         std::string offsetBytesTemp = irGen.newTemp();
+
+        Symbol tempSymbolOffset;
+        tempSymbolOffset.name = offsetBytesTemp;
+        tempSymbolOffset.type = "int"; 
+        tempSymbolOffset.isConstant = false;
+        tempSymbolOffset.isArray = false;
+        tempSymbolOffset.scopeLevel = symTab.currentScopeLevel;
+        tempSymbolOffset.isGlobal = (symTab.currentScopeLevel == 1);
+        if (!symTab.addSymbol(tempSymbolOffset)) {
+            semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in LVal.");
+        }
+
         irGen.addQuad("MUL", indexExpVal, elementSize, offsetBytesTemp); // offset_bytes = index_value * 4
 
         std::string effectiveAddressTemp = irGen.newTemp();
+
+        Symbol tempSymbolAddr;
+        tempSymbolAddr.name = effectiveAddressTemp;
+        tempSymbolAddr.type = "int_addr"; // Indicate it holds an address
+        tempSymbolAddr.isConstant = false;
+        tempSymbolAddr.isArray = false;
+        tempSymbolAddr.scopeLevel = symTab.currentScopeLevel;
+        tempSymbolAddr.isGlobal = (symTab.currentScopeLevel == 1);
+        if (!symTab.addSymbol(tempSymbolAddr)) {
+            semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in LVal.");
+        }
+        
         // nameForIRBase is the (potentially mangled) base name of the array.
         irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
         return effectiveAddressTemp; // Return the temp holding the calculated *address* of the element

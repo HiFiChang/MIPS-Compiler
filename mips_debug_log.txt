@@ -1,0 +1,447 @@
+MipsGenerator Debug Log Started
+MIPS_DEBUG: Func 'main', Loading 41 symbols from stored functionLocalSymbols (vector).
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='i', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__main_i_s2, offset=-8, type='int'
+  -> Processed Symbol 'i' (ScopeLvl: 2) into IR name '__main_i_s2', Offset: -8, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='j', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__main_j_s2, offset=-12, type='int'
+  -> Processed Symbol 'j' (ScopeLvl: 2) into IR name '__main_j_s2', Offset: -12, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t7', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t7, offset=-16, type='int'
+  -> Processed Symbol '_t7' (ScopeLvl: 2) into IR name '_t7', Offset: -16, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t8', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t8, offset=-20, type='int'
+  -> Processed Symbol '_t8' (ScopeLvl: 2) into IR name '_t8', Offset: -20, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='a1', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__main_a1_s2, offset=-24, type='const_int'
+  -> Processed Symbol 'a1' (ScopeLvl: 2) into IR name '__main_a1_s2', Offset: -24, Type: const_int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='a2', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__main_a2_s2, offset=-28, type='const_int'
+  -> Processed Symbol 'a2' (ScopeLvl: 2) into IR name '__main_a2_s2', Offset: -28, Type: const_int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t9', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t9, offset=-32, type='int'
+  -> Processed Symbol '_t9' (ScopeLvl: 2) into IR name '_t9', Offset: -32, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t10', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t10, offset=-36, type='int'
+  -> Processed Symbol '_t10' (ScopeLvl: 2) into IR name '_t10', Offset: -36, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t11', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t11, offset=-40, type='int'
+  -> Processed Symbol '_t11' (ScopeLvl: 2) into IR name '_t11', Offset: -40, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t12', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t12, offset=-44, type='int'
+  -> Processed Symbol '_t12' (ScopeLvl: 2) into IR name '_t12', Offset: -44, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t13', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t13, offset=-48, type='int'
+  -> Processed Symbol '_t13' (ScopeLvl: 2) into IR name '_t13', Offset: -48, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t14', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t14, offset=-52, type='int'
+  -> Processed Symbol '_t14' (ScopeLvl: 2) into IR name '_t14', Offset: -52, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t15', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t15, offset=-56, type='int'
+  -> Processed Symbol '_t15' (ScopeLvl: 2) into IR name '_t15', Offset: -56, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t16', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t16, offset=-60, type='int'
+  -> Processed Symbol '_t16' (ScopeLvl: 2) into IR name '_t16', Offset: -60, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t17', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t17, offset=-64, type='int'
+  -> Processed Symbol '_t17' (ScopeLvl: 2) into IR name '_t17', Offset: -64, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t18', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t18, offset=-68, type='int'
+  -> Processed Symbol '_t18' (ScopeLvl: 2) into IR name '_t18', Offset: -68, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t19', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t19, offset=-72, type='int'
+  -> Processed Symbol '_t19' (ScopeLvl: 2) into IR name '_t19', Offset: -72, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t20', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t20, offset=-76, type='int'
+  -> Processed Symbol '_t20' (ScopeLvl: 2) into IR name '_t20', Offset: -76, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t21', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t21, offset=-80, type='int'
+  -> Processed Symbol '_t21' (ScopeLvl: 2) into IR name '_t21', Offset: -80, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t22', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t22, offset=-84, type='int'
+  -> Processed Symbol '_t22' (ScopeLvl: 2) into IR name '_t22', Offset: -84, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t23', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t23, offset=-88, type='int'
+  -> Processed Symbol '_t23' (ScopeLvl: 2) into IR name '_t23', Offset: -88, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t24', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t24, offset=-92, type='int'
+  -> Processed Symbol '_t24' (ScopeLvl: 2) into IR name '_t24', Offset: -92, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t25', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t25, offset=-96, type='int'
+  -> Processed Symbol '_t25' (ScopeLvl: 2) into IR name '_t25', Offset: -96, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t26', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t26, offset=-100, type='int'
+  -> Processed Symbol '_t26' (ScopeLvl: 2) into IR name '_t26', Offset: -100, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t27', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t27, offset=-104, type='int'
+  -> Processed Symbol '_t27' (ScopeLvl: 2) into IR name '_t27', Offset: -104, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t28', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t28, offset=-108, type='int'
+  -> Processed Symbol '_t28' (ScopeLvl: 2) into IR name '_t28', Offset: -108, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t29', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t29, offset=-112, type='int'
+  -> Processed Symbol '_t29' (ScopeLvl: 2) into IR name '_t29', Offset: -112, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t30', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t30, offset=-116, type='int'
+  -> Processed Symbol '_t30' (ScopeLvl: 2) into IR name '_t30', Offset: -116, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t31', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t31, offset=-120, type='int'
+  -> Processed Symbol '_t31' (ScopeLvl: 2) into IR name '_t31', Offset: -120, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t32', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t32, offset=-124, type='int'
+  -> Processed Symbol '_t32' (ScopeLvl: 2) into IR name '_t32', Offset: -124, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t33', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t33, offset=-128, type='int'
+  -> Processed Symbol '_t33' (ScopeLvl: 2) into IR name '_t33', Offset: -128, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t34', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t34, offset=-132, type='int'
+  -> Processed Symbol '_t34' (ScopeLvl: 2) into IR name '_t34', Offset: -132, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t35', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t35, offset=-136, type='int'
+  -> Processed Symbol '_t35' (ScopeLvl: 2) into IR name '_t35', Offset: -136, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t36', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t36, offset=-140, type='int'
+  -> Processed Symbol '_t36' (ScopeLvl: 2) into IR name '_t36', Offset: -140, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t37', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t37, offset=-144, type='int'
+  -> Processed Symbol '_t37' (ScopeLvl: 2) into IR name '_t37', Offset: -144, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t38', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t38, offset=-148, type='int'
+  -> Processed Symbol '_t38' (ScopeLvl: 2) into IR name '_t38', Offset: -148, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t39', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t39, offset=-152, type='int'
+  -> Processed Symbol '_t39' (ScopeLvl: 2) into IR name '_t39', Offset: -152, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t40', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t40, offset=-156, type='int'
+  -> Processed Symbol '_t40' (ScopeLvl: 2) into IR name '_t40', Offset: -156, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t41', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t41, offset=-160, type='int'
+  -> Processed Symbol '_t41' (ScopeLvl: 2) into IR name '_t41', Offset: -160, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='k', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__main_k_s2, offset=-164, type='int'
+  -> Processed Symbol 'k' (ScopeLvl: 2) into IR name '__main_k_s2', Offset: -164, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t42', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t42, offset=-168, type='int'
+  -> Processed Symbol '_t42' (ScopeLvl: 2) into IR name '_t42', Offset: -168, Type: int
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_i_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_i_s2' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='5', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_j_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_j_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_j_s2' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t7', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t7' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t7' in tempVarOffsets with offset -16
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t7', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t7' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t7' in tempVarOffsets with offset -16
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_i_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_i_s2' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t8', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t8' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t8' in tempVarOffsets with offset -20
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t8', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t8' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t8' in tempVarOffsets with offset -20
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_j_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_j_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_j_s2' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_i_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_i_s2' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_j_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_j_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_j_s2' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t9', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t9' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t9' in tempVarOffsets with offset -32
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t9', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t9' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t9' in tempVarOffsets with offset -32
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t10', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t10' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t10' in tempVarOffsets with offset -36
+MIPS_GET_OPERAND_DEBUG: Called for operandId='4', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t11', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t11' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t11' in tempVarOffsets with offset -40
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t10', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t10' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t10' in tempVarOffsets with offset -36
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t11', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t11' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t11' in tempVarOffsets with offset -40
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t12', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t12' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t12' in tempVarOffsets with offset -44
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t12', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t12' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t12' in tempVarOffsets with offset -44
+MIPS_GET_OPERAND_DEBUG: Called for operandId='0', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t13', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t13' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t13' in tempVarOffsets with offset -48
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t14', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t14' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t14' in tempVarOffsets with offset -52
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t13', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t13' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t13' in tempVarOffsets with offset -48
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t14', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t14' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t14' in tempVarOffsets with offset -52
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t15', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t15' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t15' in tempVarOffsets with offset -56
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t16', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t16' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t16' in tempVarOffsets with offset -60
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t15', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t15' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t15' in tempVarOffsets with offset -56
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t16', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t16' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t16' in tempVarOffsets with offset -60
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t17', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t17' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t17' in tempVarOffsets with offset -64
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t17', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t17' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t17' in tempVarOffsets with offset -64
+MIPS_GET_OPERAND_DEBUG: Called for operandId='5', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t18', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t18' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t18' in tempVarOffsets with offset -68
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t18', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t18' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t18' in tempVarOffsets with offset -68
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_i_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_i_s2' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='7', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='5923', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t19', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t19' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t19' in tempVarOffsets with offset -72
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t19', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t19' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t19' in tempVarOffsets with offset -72
+MIPS_GET_OPERAND_DEBUG: Called for operandId='56', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t20', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t20' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t20' in tempVarOffsets with offset -76
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t20', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t20' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t20' in tempVarOffsets with offset -76
+MIPS_GET_OPERAND_DEBUG: Called for operandId='56', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t21', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t21' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t21' in tempVarOffsets with offset -80
+MIPS_GET_OPERAND_DEBUG: Called for operandId='6', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t22', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t22' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t22' in tempVarOffsets with offset -84
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t22', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t22' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t22' in tempVarOffsets with offset -84
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t23', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t23' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t23' in tempVarOffsets with offset -88
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t21', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t21' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t21' in tempVarOffsets with offset -80
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t23', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t23' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t23' in tempVarOffsets with offset -88
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t24', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t24' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t24' in tempVarOffsets with offset -92
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t25', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t25' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t25' in tempVarOffsets with offset -96
+MIPS_GET_OPERAND_DEBUG: Called for operandId='89', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t26', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t26' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t26' in tempVarOffsets with offset -100
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t26', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t26' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t26' in tempVarOffsets with offset -100
+MIPS_GET_OPERAND_DEBUG: Called for operandId='36', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t27', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t27' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t27' in tempVarOffsets with offset -104
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t27', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t27' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t27' in tempVarOffsets with offset -104
+MIPS_GET_OPERAND_DEBUG: Called for operandId='53', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t28', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t28' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t28' in tempVarOffsets with offset -108
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t28', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t28' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t28' in tempVarOffsets with offset -108
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t29', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t29' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t29' in tempVarOffsets with offset -112
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t29', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t29' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t29' in tempVarOffsets with offset -112
+MIPS_GET_OPERAND_DEBUG: Called for operandId='6', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t30', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t30' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t30' in tempVarOffsets with offset -116
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t25', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t25' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t25' in tempVarOffsets with offset -96
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t30', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t30' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t30' in tempVarOffsets with offset -116
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t31', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t31' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t31' in tempVarOffsets with offset -120
+MIPS_GET_OPERAND_DEBUG: Called for operandId='45', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='56', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t32', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t32' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t32' in tempVarOffsets with offset -124
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t32', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t32' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t32' in tempVarOffsets with offset -124
+MIPS_GET_OPERAND_DEBUG: Called for operandId='85', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t33', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t33' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t33' in tempVarOffsets with offset -128
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t33', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t33' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t33' in tempVarOffsets with offset -128
+MIPS_GET_OPERAND_DEBUG: Called for operandId='56', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t34', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t34' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t34' in tempVarOffsets with offset -132
+MIPS_GET_OPERAND_DEBUG: Called for operandId='35', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='56', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t35', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t35' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t35' in tempVarOffsets with offset -136
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t35', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t35' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t35' in tempVarOffsets with offset -136
+MIPS_GET_OPERAND_DEBUG: Called for operandId='4', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t36', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t36' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t36' in tempVarOffsets with offset -140
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t34', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t34' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t34' in tempVarOffsets with offset -132
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t36', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t36' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t36' in tempVarOffsets with offset -140
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t37', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t37' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t37' in tempVarOffsets with offset -144
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t37', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t37' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t37' in tempVarOffsets with offset -144
+MIPS_GET_OPERAND_DEBUG: Called for operandId='9', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t38', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t38' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t38' in tempVarOffsets with offset -148
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t38', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t38' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t38' in tempVarOffsets with offset -148
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t39', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t39' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t39' in tempVarOffsets with offset -152
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t31', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t31' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t31' in tempVarOffsets with offset -120
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t39', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t39' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t39' in tempVarOffsets with offset -152
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t40', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t40' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t40' in tempVarOffsets with offset -156
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t24', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t24' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t24' in tempVarOffsets with offset -92
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t40', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t40' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t40' in tempVarOffsets with offset -156
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t41', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t41' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t41' in tempVarOffsets with offset -160
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t41', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t41' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t41' in tempVarOffsets with offset -160
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_j_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_j_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_j_s2' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t42', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t42' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t42' in tempVarOffsets with offset -168
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t42', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t42' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '_t42' in tempVarOffsets with offset -168
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_k_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_k_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_k_s2' in tempVarOffsets with offset -164
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_i_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_i_s2' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_j_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_j_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_j_s2' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__main_k_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__main_k_s2' in function 'main'
+MIPS_GET_OPERAND_DEBUG: Found '__main_k_s2' in tempVarOffsets with offset -164
+MIPS_GET_OPERAND_DEBUG: Called for operandId='0', loadAddr=0
+MIPS_DEBUG: Func 'fib', Loading 8 symbols from stored functionLocalSymbols (vector).
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='i', isGlobal=0, isIRGeneratedName=0, scopeLevel=2, computedKey='__fib_i_s2, offset=4, type='int' (Param)
+  -> Processed Symbol 'i' (ScopeLvl: 2) into IR name '__fib_i_s2', Offset: 4, Type: int (Param)
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t0', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t0, offset=-8, type='int'
+  -> Processed Symbol '_t0' (ScopeLvl: 2) into IR name '_t0', Offset: -8, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t1', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t1, offset=-12, type='int'
+  -> Processed Symbol '_t1' (ScopeLvl: 2) into IR name '_t1', Offset: -12, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t2', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t2, offset=-16, type='int'
+  -> Processed Symbol '_t2' (ScopeLvl: 2) into IR name '_t2', Offset: -16, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t3', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t3, offset=-20, type='int'
+  -> Processed Symbol '_t3' (ScopeLvl: 2) into IR name '_t3', Offset: -20, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t4', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t4, offset=-24, type='int'
+  -> Processed Symbol '_t4' (ScopeLvl: 2) into IR name '_t4', Offset: -24, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t5', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t5, offset=-28, type='int'
+  -> Processed Symbol '_t5' (ScopeLvl: 2) into IR name '_t5', Offset: -28, Type: int
+MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='_t6', isGlobal=0, isIRGeneratedName=1, scopeLevel=2, computedKey='_t6, offset=-32, type='int'
+  -> Processed Symbol '_t6' (ScopeLvl: 2) into IR name '_t6', Offset: -32, Type: int
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__fib_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__fib_i_s2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '__fib_i_s2' in tempVarOffsets with offset 4
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t0', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t0' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t0' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t0', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t0' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t0' in tempVarOffsets with offset -8
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__fib_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__fib_i_s2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '__fib_i_s2' in tempVarOffsets with offset 4
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t1' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t1' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t1' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t1' in tempVarOffsets with offset -12
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__fib_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__fib_i_s2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '__fib_i_s2' in tempVarOffsets with offset 4
+MIPS_GET_OPERAND_DEBUG: Called for operandId='1', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t2' in tempVarOffsets with offset -16
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t2' in tempVarOffsets with offset -16
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t3', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t3' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t3' in tempVarOffsets with offset -20
+MIPS_GET_OPERAND_DEBUG: Called for operandId='__fib_i_s2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '__fib_i_s2' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '__fib_i_s2' in tempVarOffsets with offset 4
+MIPS_GET_OPERAND_DEBUG: Called for operandId='2', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t4', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t4' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t4' in tempVarOffsets with offset -24
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t4', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t4' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t4' in tempVarOffsets with offset -24
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t5', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t5' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t5' in tempVarOffsets with offset -28
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t3', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t3' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t3' in tempVarOffsets with offset -20
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t5', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t5' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t5' in tempVarOffsets with offset -28
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t6', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t6' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t6' in tempVarOffsets with offset -32
+MIPS_GET_OPERAND_DEBUG: Called for operandId='_t6', loadAddr=0
+MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '_t6' in function 'fib'
+MIPS_GET_OPERAND_DEBUG: Found '_t6' in tempVarOffsets with offset -32
+MIPS generation complete for current MipsGenerator instance. Output to: 1
+MipsGenerator Debug Log Ended

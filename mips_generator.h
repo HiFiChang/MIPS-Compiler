@@ -24,6 +24,7 @@ public:
 
 private:
     std::ofstream mipsFile; // MIPS output file stream (now an object)
+    std::ofstream debugLogFile; // Debug log file stream
     SymbolTable& symTab;
     const std::vector<Quadruple>& quads;
     std::map<std::string, int> tempVarOffsets; 

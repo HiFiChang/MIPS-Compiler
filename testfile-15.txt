@@ -1,0 +1,16 @@
+
+int copy(int n)
+{
+	return n;
+}
+
+int main()
+{
+		if ( copy(1) ==  copy(1)  && copy(2) == copy(3))
+		{  printf("true\n"); }
+		else
+		{ printf("false\n"); }
+
+
+	return 0;
+}

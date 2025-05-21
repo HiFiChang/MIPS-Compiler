@@ -1,45 +1,206 @@
 .data
-Pai: .word 3
-a: .word 0
-b: .word 0
-c: .word 0
-testBlock: .word 0
-_str_lit_0: .asciiz "\n"
+_str_lit_0: .asciiz ", "
+_str_lit_1: .asciiz "\n"
 _newline: .asciiz "
 "
 
 .text
 .globl main
-    li $t0, 1       # Load immediate 1
-    sw $t0, testBlock
 main:
     addiu $sp, $sp, -8  # Allocate space for old $fp and $ra
     sw $fp, 4($sp)      # Save old frame pointer
     sw $ra, 0($sp)      # Save return address
     addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)
-    addiu $sp, $sp, -12  # Allocate space for locals and temps
+    addiu $sp, $sp, -168  # Allocate space for locals and temps
     # MIPS_DEBUG: No params to process for main (funcSym=valid, params.empty()=true)
-    lw $a0, testBlock       # Load from testBlock (testBlock)
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_0 # Address of string to print
-    syscall
     li $t0, 2       # Load immediate 2
     sw $t0, -8($fp)
-    lw $a0, -8($fp)       # Load from __main_testBlock_s2 (-8($fp))
-    li $v0, 1           # System call for print_int
-    syscall
-    li $v0, 4           # System call for print_string
-    la $a0, _str_lit_0 # Address of string to print
-    syscall
-    li $t0, 3       # Load immediate 3
+    li $t0, 5       # Load immediate 5
     sw $t0, -12($fp)
-    lw $a0, -12($fp)       # Load from __main_testBlock_s3 (-12($fp))
+    li $v0, 5           # System call for read_int
+    syscall             # Integer read into $v0
+    sw $v0, -16($fp)
+    lw $t0, -16($fp)       # Load from _t7 (-16($fp))
+    sw $t0, -8($fp)
+    li $v0, 5           # System call for read_int
+    syscall             # Integer read into $v0
+    sw $v0, -20($fp)
+    lw $t0, -20($fp)       # Load from _t8 (-20($fp))
+    sw $t0, -12($fp)
+    lw $t0, -8($fp)       # Load from __main_i_s2 (-8($fp))
+    lw $t1, -12($fp)       # Load from __main_j_s2 (-12($fp))
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -32($fp)
+    lw $t0, -32($fp)       # Load from _t9 (-32($fp))
+    subu $t1, $zero, $t0   # $t1 = - $t0 (negation)
+    sw $t1, -36($fp)
+    li $t8, 4       # Load immediate 4
+    move $a0, $t8  # Param 0: 4
+    jal fib         # Call function fib
+    sw $v0, -40($fp)
+    lw $t0, -36($fp)       # Load from _t10 (-36($fp))
+    lw $t1, -40($fp)       # Load from _t11 (-40($fp))
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -44($fp)
+    lw $t0, -44($fp)       # Load from _t12 (-44($fp))
+    li $t1, 0       # Load immediate 0
+    addu $t2, $t0, $t1
+    sw $t2, -48($fp)
+    li $t0, 2       # Load immediate 2
+    li $t1, 1       # Load immediate 1
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -52($fp)
+    lw $t0, -48($fp)       # Load from _t13 (-48($fp))
+    lw $t1, -52($fp)       # Load from _t14 (-52($fp))
+    addu $t2, $t0, $t1
+    sw $t2, -56($fp)
+    li $t0, 1       # Load immediate 1
+    li $t1, 2       # Load immediate 2
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -60($fp)
+    lw $t0, -56($fp)       # Load from _t15 (-56($fp))
+    lw $t1, -60($fp)       # Load from _t16 (-60($fp))
+    subu $t2, $t0, $t1
+    sw $t2, -64($fp)
+    lw $t0, -64($fp)       # Load from _t17 (-64($fp))
+    li $t1, 5       # Load immediate 5
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -68($fp)
+    lw $t0, -68($fp)       # Load from _t18 (-68($fp))
+    sw $t0, -8($fp)
+    li $t0, 7       # Load immediate 7
+    li $t1, 5923       # Load immediate 5923
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -72($fp)
+    lw $t0, -72($fp)       # Load from _t19 (-72($fp))
+    li $t1, 56       # Load immediate 56
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -76($fp)
+    lw $t0, -76($fp)       # Load from _t20 (-76($fp))
+    li $t1, 56       # Load immediate 56
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -80($fp)
+    li $t8, 6       # Load immediate 6
+    move $a0, $t8  # Param 0: 6
+    jal fib         # Call function fib
+    sw $v0, -84($fp)
+    lw $t8, -84($fp)       # Load from _t22 (-84($fp))
+    move $a0, $t8  # Param 0: _t22
+    jal fib         # Call function fib
+    sw $v0, -88($fp)
+    lw $t0, -80($fp)       # Load from _t21 (-80($fp))
+    lw $t1, -88($fp)       # Load from _t23 (-88($fp))
+    subu $t2, $t0, $t1
+    sw $t2, -92($fp)
+    li $t0, 1       # Load immediate 1
+    li $t1, 2       # Load immediate 2
+    addu $t2, $t0, $t1
+    sw $t2, -96($fp)
+    li $t0, 89       # Load immediate 89
+    li $t1, 2       # Load immediate 2
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -100($fp)
+    lw $t0, -100($fp)       # Load from _t26 (-100($fp))
+    li $t1, 36       # Load immediate 36
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -104($fp)
+    lw $t0, -104($fp)       # Load from _t27 (-104($fp))
+    li $t1, 53       # Load immediate 53
+    subu $t2, $t0, $t1
+    sw $t2, -108($fp)
+    lw $t0, -108($fp)       # Load from _t28 (-108($fp))
+    li $t1, 1       # Load immediate 1
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -112($fp)
+    lw $t0, -112($fp)       # Load from _t29 (-112($fp))
+    li $t1, 6       # Load immediate 6
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -116($fp)
+    lw $t0, -96($fp)       # Load from _t25 (-96($fp))
+    lw $t1, -116($fp)       # Load from _t30 (-116($fp))
+    subu $t2, $t0, $t1
+    sw $t2, -120($fp)
+    li $t0, 45       # Load immediate 45
+    li $t1, 56       # Load immediate 56
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -124($fp)
+    lw $t0, -124($fp)       # Load from _t32 (-124($fp))
+    li $t1, 85       # Load immediate 85
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -128($fp)
+    lw $t0, -128($fp)       # Load from _t33 (-128($fp))
+    li $t1, 56       # Load immediate 56
+    subu $t2, $t0, $t1
+    sw $t2, -132($fp)
+    li $t0, 35       # Load immediate 35
+    li $t1, 56       # Load immediate 56
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -136($fp)
+    lw $t0, -136($fp)       # Load from _t35 (-136($fp))
+    li $t1, 4       # Load immediate 4
+    div $t0, $t1
+    mflo $t2
+    sw $t2, -140($fp)
+    lw $t0, -132($fp)       # Load from _t34 (-132($fp))
+    lw $t1, -140($fp)       # Load from _t36 (-140($fp))
+    addu $t2, $t0, $t1
+    sw $t2, -144($fp)
+    lw $t0, -144($fp)       # Load from _t37 (-144($fp))
+    li $t1, 9       # Load immediate 9
+    subu $t2, $t0, $t1
+    sw $t2, -148($fp)
+    li $t0, 2       # Load immediate 2
+    lw $t1, -148($fp)       # Load from _t38 (-148($fp))
+    mult $t0, $t1
+    mflo $t2
+    sw $t2, -152($fp)
+    lw $t0, -120($fp)       # Load from _t31 (-120($fp))
+    lw $t1, -152($fp)       # Load from _t39 (-152($fp))
+    subu $t2, $t0, $t1
+    sw $t2, -156($fp)
+    lw $t0, -92($fp)       # Load from _t24 (-92($fp))
+    lw $t1, -156($fp)       # Load from _t40 (-156($fp))
+    addu $t2, $t0, $t1
+    sw $t2, -160($fp)
+    lw $t0, -160($fp)       # Load from _t41 (-160($fp))
+    sw $t0, -12($fp)
+    li $t0, 5         # Load immediate 5 into $t0
+    subu $t1, $zero, $t0   # $t1 = - $t0 (negation)
+    sw $t1, -168($fp)
+    lw $t0, -168($fp)       # Load from _t42 (-168($fp))
+    sw $t0, -164($fp)
+    lw $a0, -8($fp)       # Load from __main_i_s2 (-8($fp))
     li $v0, 1           # System call for print_int
     syscall
     li $v0, 4           # System call for print_string
     la $a0, _str_lit_0 # Address of string to print
+    syscall
+    lw $a0, -12($fp)       # Load from __main_j_s2 (-12($fp))
+    li $v0, 1           # System call for print_int
+    syscall
+    li $v0, 4           # System call for print_string
+    la $a0, _str_lit_0 # Address of string to print
+    syscall
+    lw $a0, -164($fp)       # Load from __main_k_s2 (-164($fp))
+    li $v0, 1           # System call for print_int
+    syscall
+    li $v0, 4           # System call for print_string
+    la $a0, _str_lit_1 # Address of string to print
     syscall
     li $v0, 0       # Load immediate 0
 _L_main_epilogue:
@@ -49,4 +210,61 @@ _L_main_epilogue:
     addiu $sp, $sp, 8     # Pop the saved $fp and $ra from the stack.
     li $v0, 10          # System call for exit
     syscall             # Exit
+
+fib:
+    addiu $sp, $sp, -8  # Allocate space for old $fp and $ra
+    sw $fp, 4($sp)      # Save old frame pointer
+    sw $ra, 0($sp)      # Save return address
+    addiu $fp, $sp, 4   # Set up new frame pointer (points to saved old $fp)
+    addiu $sp, $sp, -32  # Allocate space for locals and temps
+    # MIPS_DEBUG: Processing params for func: fib
+    # MIPS_DEBUG: funcSym->params.size() = 1
+    # MIPS_DEBUG: Param loop iter 0, Name: i, Type: int
+    # MIPS_DEBUG: Found paramSym for 'i' in scope 'fib', Offset: 4, IsParam: 1
+    sw $a0, 4($fp)  # Store param i from $a0 to stack
+    lw $t0, 4($fp)       # Load from __fib_i_s2 (4($fp))
+    li $t1, 1       # Load immediate 1
+    seq $t2, $t0, $t1
+    sw $t2, -8($fp)
+    lw $t0, -8($fp)       # Load from _t0 (-8($fp))
+    beq $t0, $zero, _L0  # If _t0 is false (zero), goto _L0
+    li $v0, 1       # Load immediate 1
+    j _L_fib_epilogue  # Jump after setting fib base case return value
+_L0:
+    lw $t0, 4($fp)       # Load from __fib_i_s2 (4($fp))
+    li $t1, 2       # Load immediate 2
+    seq $t2, $t0, $t1
+    sw $t2, -12($fp)
+    lw $t0, -12($fp)       # Load from _t1 (-12($fp))
+    beq $t0, $zero, _L2  # If _t1 is false (zero), goto _L2
+    li $v0, 2       # Load immediate 2
+    j _L_fib_epilogue  # Jump after setting fib base case return value
+_L2:
+    lw $t0, 4($fp)       # Load from __fib_i_s2 (4($fp))
+    li $t1, 1       # Load immediate 1
+    subu $t2, $t0, $t1
+    sw $t2, -16($fp)
+    lw $t8, -16($fp)       # Load from _t2 (-16($fp))
+    move $a0, $t8  # Param 0: _t2
+    jal fib         # Call function fib
+    sw $v0, -20($fp)
+    lw $t0, 4($fp)       # Load from __fib_i_s2 (4($fp))
+    li $t1, 2       # Load immediate 2
+    subu $t2, $t0, $t1
+    sw $t2, -24($fp)
+    lw $t8, -24($fp)       # Load from _t4 (-24($fp))
+    move $a0, $t8  # Param 0: _t4
+    jal fib         # Call function fib
+    sw $v0, -28($fp)
+    lw $t0, -20($fp)       # Load from _t3 (-20($fp))
+    lw $t1, -28($fp)       # Load from _t5 (-28($fp))
+    addu $t2, $t0, $t1
+    sw $t2, -32($fp)
+    lw $v0, -32($fp)       # Load from _t6 (-32($fp))
+_L_fib_epilogue:
+    move $sp, $fp         # Restore $sp to point to the location of the saved old $fp.
+    lw $ra, -4($sp)       # Restore $ra from saved_fp_location - 4.
+    lw $fp, 0($sp)        # Restore $fp from saved_fp_location.
+    addiu $sp, $sp, 8     # Pop the saved $fp and $ra from the stack.
+    jr $ra              # Return from function
 

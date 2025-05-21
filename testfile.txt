@@ -1,18 +1,28 @@
-
-const int Pai = 3;
-int a, b, c;
-int testBlock = 1;
-
-
-int main()
-{
-	printf("%d\n", testBlock);
-	int testBlock = 2;
-	{
-		printf("%d\n", testBlock);
-		int testBlock = 3;
-		printf("%d\n", testBlock);
-	}
-	
-	return 0;
+// It's assumed the function 'fib' starts here, as the errors begin with its content.
+// The actual 'int fib(int i) {' line might have been before the logged errors
+// or was not distinctly identified by an error message.
+// For reconstruction, we'll add the probable signature.
+int fib(int i) 
+{ // This opening brace might be implied or part of the fib signature line
+    if (i == 1) {
+        return 1;
+    }
+    if (i == 2) {
+        return 2;
+    }
+    return fib(i - 1) + fib(i - 2);
+}
+int main () {
+    int i = 2,j = 5;
+    i = getint();
+    j = getint();
+    //const int a[3][2] = {{1,2},{2,3},{3,4}};
+    //const int a[2] = {1,2};
+    const int a1 = 1;
+    const int a2 = 2;
+    i = (-(i * j) * fib(4) + 0 + 2 * 1 - 1/2) * 5;
+    j = 7*5923/56*56 - fib(fib(6)) + (1+2-(89/2*36-53) /1*6-2*(45*56/85-56+35*56/4-9));
+    int k = +-+5;
+    printf("%d, %d, %d\n", i, j, k);
+    return 0;
 }
