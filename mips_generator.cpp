@@ -153,9 +153,29 @@ void MipsGenerator::generateDataSection() {
             if (sym.isGlobal && sym.type != "string_literal" && sym.type != "void_func" && sym.type != "int_func") {
                 mipsFile << sym.name << ": ";
                 if (sym.isArray) {
-                    int totalSize = 4;
-                    for (int dim : sym.arrayDimensions) totalSize *= std::max(1, dim); // ensure dim > 0
-                    mipsFile << ".space " << totalSize << "\n";
+                    if (sym.isConstant && sym.isInitialized && !sym.arrayValues.empty()) {
+                        // 如果是带有初始值的常量数组，直接输出.word序列
+                        mipsFile << ".word ";
+                        for (size_t i = 0; i < sym.arrayValues.size(); ++i) {
+                            if (i > 0) mipsFile << ", ";
+                            mipsFile << sym.arrayValues[i];
+                        }
+                        mipsFile << "\n";
+                        
+                        // 如果数组大小大于初始值数量，用0填充剩余空间
+                        int totalElements = 1;
+                        for (int dim : sym.arrayDimensions) totalElements *= std::max(1, dim);
+                        
+                        if (totalElements > sym.arrayValues.size()) {
+                            int remainingSize = (totalElements - sym.arrayValues.size()) * 4;
+                            mipsFile << "    .space " << remainingSize << " # Padding for uninitialized elements\n";
+                        }
+                    } else {
+                        // 对于未初始化的数组，使用.space分配空间
+                        int totalSize = 4;
+                        for (int dim : sym.arrayDimensions) totalSize *= std::max(1, dim); // ensure dim > 0
+                        mipsFile << ".space " << totalSize << "\n";
+                    }
                 } else {
                     // Use symbol's value if it's a known constant, otherwise default to 0
                     if (sym.isConstant && sym.isInitialized) {

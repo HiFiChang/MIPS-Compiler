@@ -18,6 +18,7 @@ struct Symbol {
     int offset; // Memory offset (from $fp for locals/params, or conceptual for globals)
     bool isArray;
     std::vector<int> arrayDimensions; // Sizes of dimensions for arrays
+    std::vector<int> arrayValues; // 存储数组的初始值，特别是常量数组
 
     // For functions:
     std::string returnType; // "int" or "void"

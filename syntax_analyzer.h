@@ -45,6 +45,7 @@ private:
     void semanticError(const std::string& message);
     std::string getExpType(const std::string& expResult);
     std::string getMangledNameForIR(Symbol* sym) const;
+    bool tryResolveToConstInt(const std::string& operandStr, int& outValue);
 
 public:
     SyntaxAnalyzer(Lexer& lex, SymbolTable& sTab, IRGenerator& irG,
@@ -59,7 +60,7 @@ public:
     void parseConstDecl();
     std::string parseBType();
     void parseConstDef(const std::string& constBaseType);
-    std::string parseConstInitVal(Symbol& constSym);
+    std::string parseConstInitVal(Symbol& constSym, bool parsingArrayElement = false);
     void parseVarDecl();
     void parseVarDef(const std::string& varBaseType);
     std::string parseInitVal(Symbol& varSym);

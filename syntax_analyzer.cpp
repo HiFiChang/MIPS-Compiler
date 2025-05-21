@@ -372,9 +372,9 @@ void SyntaxAnalyzer::parseConstDef(const std::string& constBaseType) {
 
 // ConstInitVal → ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
 // For single const: returns evaluated string. For array: fills sym, generates IR for elements.
-std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym) {
+std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym, bool parsingArrayElement) {
     if (currentToken.type == LBRACE) { 
-        if (!constSym.isArray) semanticError("Aggregate initializer for non-array const '" + constSym.name + "'.");
+        if (!constSym.isArray && !parsingArrayElement) semanticError("Aggregate initializer for non-array const '" + constSym.name + "'.");
         match(LBRACE);
         
         // TODO: Handle const array initialization IR generation.
@@ -386,11 +386,11 @@ std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym) {
         if (currentToken.type != RBRACE) {
             // This needs a way to store multiple initial values in the Symbol object for arrays.
             // For now, let's assume parseConstInitVal for element returns a string of the value.
-            parseConstInitVal(constSym); // Recursive call - how to store for nth element?
+            parseConstInitVal(constSym, true); // Recursive call - now passing true for array element parsing
             elementCount++;
             while (currentToken.type == COMMA) {
                 match(COMMA);
-                parseConstInitVal(constSym);
+                parseConstInitVal(constSym, true); // Also passing true here for array element parsing
                 elementCount++;
             }
         }
@@ -399,10 +399,21 @@ std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym) {
         recordSyntaxOutput("<ConstInitVal>");
         return "{array_init}"; // Placeholder indicating array init was parsed
     } else { // Single ConstExp
-        if (constSym.isArray) semanticError("Scalar initializer for array const '" + constSym.name + "'.");
+        if (constSym.isArray && !parsingArrayElement) semanticError("Scalar initializer for array const '" + constSym.name + "'.");
         std::string valStr = parseConstExp(); // Should return a string representation of the constant value
         try { 
-            constSym.value = std::stoi(valStr); // Store the integer value in the symbol
+            // 对于数组元素，应该存储到数组初始值列表中
+            if (parsingArrayElement && constSym.isArray) {
+                // 将数组元素的值保存到constSym的arrayValues中
+                try {
+                    int elementValue = std::stoi(valStr);
+                    constSym.arrayValues.push_back(elementValue);
+                } catch (...) {
+                    semanticError("Invalid array element value for '" + constSym.name + "'. Expected integer.");
+                }
+            } else if (!constSym.isArray) {
+                constSym.value = std::stoi(valStr); // Store the integer value in the symbol
+            }
             constSym.isInitialized = true;
         }
         catch (...) { semanticError("Invalid constant value for '" + constSym.name + "'. Expected integer string from ConstExp."); }
@@ -606,6 +617,7 @@ std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym) {
                     }
 
                     irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
+                    irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal); // <<< ADD THIS LINE
                 } else {
                      semanticError("Too many initializers for array '" + varSym.name + "'.");
                 }
@@ -1123,22 +1135,37 @@ std::string SyntaxAnalyzer::parseExp(const std::string& expectedType) {
 
 // AddExp → MulExp { ('+' | '-') MulExp }
 std::string SyntaxAnalyzer::parseAddExp(const std::string& expectedType) {
-    std::string leftOperand = parseMulExp(expectedType); 
+    std::string leftOperandStr = parseMulExp(expectedType); 
 
     while (currentToken.type == PLUS || currentToken.type == MINU) {
         TokenType opToken = currentToken.type;
         match(opToken); 
-        std::string rightOperand = parseMulExp(expectedType); 
+        std::string rightOperandStr = parseMulExp(expectedType); 
         
-        std::string leftType = getExpType(leftOperand);
-        std::string rightType = getExpType(rightOperand);
+        // Try constant folding
+        int constLeftVal, constRightVal;
+        bool isConstLeft = tryResolveToConstInt(leftOperandStr, constLeftVal);
+        bool isConstRight = tryResolveToConstInt(rightOperandStr, constRightVal);
+
+        if (isConstLeft && isConstRight) {
+            if (opToken == PLUS) {
+                leftOperandStr = std::to_string(constLeftVal + constRightVal);
+            } else { // MINU
+                leftOperandStr = std::to_string(constLeftVal - constRightVal);
+            }
+            recordSyntaxOutput("<AddExp>"); 
+            continue; // Continue to next potential operation with the folded result
+        }
+
+        // If not constant foldable, generate IR
+        std::string leftType = getExpType(leftOperandStr);
+        std::string rightType = getExpType(rightOperandStr);
 
         if (!((leftType == "int" || leftType == "const_int") && (rightType == "int" || rightType == "const_int"))) {
             // semanticError("Operands for '" + (opToken == PLUS ? std::string("+") : std::string("-")) + "' must be integers. Got " + leftType + " and " + rightType);
         }
 
         std::string resultTempName = irGen.newTemp(); 
-        
         Symbol tempSymbol;
         tempSymbol.name = resultTempName;
         tempSymbol.type = "int"; 
@@ -1150,32 +1177,50 @@ std::string SyntaxAnalyzer::parseAddExp(const std::string& expectedType) {
             semanticError("Failed to add temporary variable " + resultTempName + " to symbol table.");
         }
         
-        irGen.addQuad(opToken == PLUS ? "ADD" : "SUB", leftOperand, rightOperand, resultTempName);
-        leftOperand = resultTempName; 
+        irGen.addQuad(opToken == PLUS ? "ADD" : "SUB", leftOperandStr, rightOperandStr, resultTempName);
+        leftOperandStr = resultTempName; 
         
         recordSyntaxOutput("<AddExp>"); 
     }
-    return leftOperand; 
+    return leftOperandStr; 
 }
 
 // MulExp → UnaryExp { ('*' | '/' | '%') UnaryExp }
 std::string SyntaxAnalyzer::parseMulExp(const std::string& expectedType) {
-    std::string leftOperand = parseUnaryExp(); 
+    std::string leftOperandStr = parseUnaryExp(); 
 
     while (currentToken.type == MULT || currentToken.type == DIV || currentToken.type == MOD) {
         TokenType opToken = currentToken.type;
         match(opToken); 
-        std::string rightOperand = parseUnaryExp(); 
+        std::string rightOperandStr = parseUnaryExp(); 
         
-        std::string leftType = getExpType(leftOperand);
-        std::string rightType = getExpType(rightOperand);
+        // Try constant folding
+        int constLeftVal, constRightVal;
+        bool isConstLeft = tryResolveToConstInt(leftOperandStr, constLeftVal);
+        bool isConstRight = tryResolveToConstInt(rightOperandStr, constRightVal);
 
+        if (isConstLeft && isConstRight) {
+            if (opToken == MULT) {
+                leftOperandStr = std::to_string(constLeftVal * constRightVal);
+            } else if (opToken == DIV) {
+                if (constRightVal == 0) semanticError("Division by zero in constant expression.");
+                leftOperandStr = std::to_string(constLeftVal / constRightVal);
+            } else { // MOD
+                if (constRightVal == 0) semanticError("Modulo by zero in constant expression.");
+                leftOperandStr = std::to_string(constLeftVal % constRightVal);
+            }
+            recordSyntaxOutput("<MulExp>"); 
+            continue; // Continue to next potential operation with the folded result
+        }
+
+        // If not constant foldable, generate IR
+        std::string leftType = getExpType(leftOperandStr);
+        std::string rightType = getExpType(rightOperandStr);
         if (!((leftType == "int" || leftType == "const_int") && (rightType == "int" || rightType == "const_int"))) {
              // semanticError("Operands for multiplicative op must be integers. Got " + leftType + " and " + rightType);
         }
 
         std::string resultTempName = irGen.newTemp();
-
         Symbol tempSymbol;
         tempSymbol.name = resultTempName;
         tempSymbol.type = "int"; 
@@ -1191,27 +1236,43 @@ std::string SyntaxAnalyzer::parseMulExp(const std::string& expectedType) {
         if (opToken == MULT) opStr = "MUL";
         else if (opToken == DIV) opStr = "DIV";
         else opStr = "MOD";
-        irGen.addQuad(opStr, leftOperand, rightOperand, resultTempName);
-        leftOperand = resultTempName;
+        irGen.addQuad(opStr, leftOperandStr, rightOperandStr, resultTempName);
+        leftOperandStr = resultTempName;
         
         recordSyntaxOutput("<MulExp>"); 
     }
-    return leftOperand;
+    return leftOperandStr;
 }
 
 // UnaryExp → PrimaryExp | Ident '(' [FuncRParams] ')' | UnaryOp UnaryExp
 std::string SyntaxAnalyzer::parseUnaryExp() { 
     if (currentToken.type == PLUS || currentToken.type == MINU || currentToken.type == NOT) {
         std::string opIrName = parseUnaryOp(); 
-        std::string operand = parseUnaryExp(); 
+        std::string operandStr = parseUnaryExp(); // operandStr is the string from the inner UnaryExp
         
-        if (opIrName == "POS") { 
+        if (opIrName == "POS") { // Unary plus, effectively a no-op for value
             recordSyntaxOutput("<UnaryExp>");
-            return operand; 
+            return operandStr; 
+        }
+
+        // Try constant folding for NEG and NOT_OP
+        int constOperandVal;
+        bool isConstOperand = tryResolveToConstInt(operandStr, constOperandVal);
+
+        if (isConstOperand) {
+            if (opIrName == "NEG") {
+                recordSyntaxOutput("<UnaryExp>");
+                return std::to_string(-constOperandVal);
+            } else if (opIrName == "NOT_OP") {
+                // Logical NOT: !0 is 1, !non-zero is 0
+                recordSyntaxOutput("<UnaryExp>");
+                return std::to_string(constOperandVal == 0 ? 1 : 0);
+            }
+            // Should not reach here if opIrName is POS, NEG, or NOT_OP
         }
         
+        // If not constant foldable, generate IR
         std::string resultTempName = irGen.newTemp();
-
         Symbol tempSymbolUnary;
         tempSymbolUnary.name = resultTempName;
         tempSymbolUnary.type = "int"; 
@@ -1223,15 +1284,14 @@ std::string SyntaxAnalyzer::parseUnaryExp() {
             semanticError("Failed to add temporary variable " + resultTempName + " to symbol table in UnaryOp.");
         }
 
-        std::string operandType = getExpType(operand);
-
+        std::string operandType = getExpType(operandStr);
         if (opIrName == "NEG" && !(operandType == "int" || operandType == "const_int")) {
             // semanticError("Operand for unary '-' must be an integer. Got " + operandType);
         }
         if (opIrName == "NOT_OP" && !(operandType == "int" || operandType == "const_int")) { 
             // semanticError("Operand for '!' must be a boolean (integer). Got " + operandType);
         }
-        irGen.addQuad(opIrName, operand, "_", resultTempName);
+        irGen.addQuad(opIrName, operandStr, "_", resultTempName);
         recordSyntaxOutput("<UnaryExp>");
         return resultTempName;
     } else if (currentToken.type == IDENFR) {
@@ -1642,39 +1702,23 @@ std::string SyntaxAnalyzer::parseLOrExp() { // Changed void to std::string
 }
 
 // ConstExp → AddExp
-// Must return a string that represents a compile-time constant value.
-// parseAddExp needs to be able to evaluate constant expressions if its inputs are constants.
-// This is a simplification for now: parseAddExp returns a temp or const string.
-// For true const evaluation, parseAddExp would need more logic.
-// Assume parseAddExp can handle it for now, or this ConstExp is just structurally AddExp.
-std::string SyntaxAnalyzer::parseConstExp() { // Changed void to std::string
-    // The result of AddExp in a ConstExp context *must* be evaluatable at compile time.
-    // The current parseAddExp generates IR and returns a temp/const string.
-    // For a true const expression, we'd need to perform constant folding here or in parseAddExp.
-    // For SysY, ConstExp is used for array dimensions and const initializers.
-    // Let's assume parseAddExp returns a string which is a literal number if it was a const expression.
+std::string SyntaxAnalyzer::parseConstExp() { 
     std::string result = parseAddExp("int"); // Expect int for const expressions usually
 
-    // Validate if 'result' is indeed a constant integer string.
-    // This is a runtime check during parsing. A full constant folder would do this.
-    bool isNumeric = !result.empty() && std::all_of(result.begin() + (result[0] == '-' ? 1:0), result.end(), ::isdigit);
-    if (result.rfind("_t",0)==0 || (result.rfind("_",0)==0 && result.find("_str_lit") == std::string::npos && result.find("_L") == std::string::npos && !isNumeric) ) { // If it's a temp var, or non-numeric label/ident
-        Symbol* s = symTab.lookupSymbol(result);
-        if (!s || !s->isConstant) {
-             //semanticError("Expression in constant context ('" + result + "') is not a constant value.");
-             // This semantic error is tricky because parseAddExp will produce temps.
-             // A proper constant folder is needed.
-             // For now, we accept the result of AddExp and hope it was const if context required.
-        } else if (s && s->isConstant) {
-            result = std::to_string(s->value); // Use the actual constant value
-        }
+    // After constant folding attempts in AddExp/MulExp/UnaryExp,
+    // result should be a numeric string if it truly resolved to a constant.
+    int constValue;
+    if (!tryResolveToConstInt(result, constValue)) {
+        // If it couldn't be resolved to a constant integer now (e.g., it's a temp var like '_t1')
+        // then it wasn't a valid compile-time constant expression.
+        semanticError("Expression in constant context ('" + result + "') did not evaluate to a compile-time integer constant.");
     }
-
-
+    
+    // If tryResolveToConstInt succeeded, 'result' might still be an identifier that resolved to a const.
+    // For consistency, and to ensure parseConstInitVal receives a pure number string:
     recordSyntaxOutput("<ConstExp>");
-    return result; // Return the (hopefully) constant string
+    return std::to_string(constValue); // Return the actual folded integer value as a string
 }
-
 
 // Cond → LOrExp
 // Definition based on lab3.cpp structure, adapted for lab6.cpp (returns string)
@@ -1796,5 +1840,48 @@ void SyntaxAnalyzer::analyze() {
     if (enableSyntaxOutput) { 
         mergeAndWriteSyntaxOutput();
     }
+}
+
+bool SyntaxAnalyzer::tryResolveToConstInt(const std::string& operandStr, int& outValue) {
+    if (operandStr.empty()) {
+        return false;
+    }
+
+    // 1. Check if it's an integer literal string
+    bool isNumeric = true;
+    size_t k_idx = 0;
+    if (operandStr[0] == '-') {
+        if (operandStr.length() == 1) isNumeric = false; // Just "-"
+        k_idx = 1;
+    }
+    for (; k_idx < operandStr.length(); ++k_idx) {
+        if (!isdigit(operandStr[k_idx])) {
+            isNumeric = false;
+            break;
+        }
+    }
+
+    if (isNumeric) {
+        try {
+            outValue = std::stoi(operandStr);
+            return true;
+        } catch (const std::invalid_argument& ia) {
+            // Not a valid integer string for stoi, proceed
+        } catch (const std::out_of_range& oor) {
+            // Value out of range for stoi, proceed
+        }
+    }
+
+    // 2. Check if it's a known constant symbol in the symbol table
+    Symbol* s = this->symTab.lookupSymbol(operandStr);
+    if (s && s->isConstant && !s->isArray && s->isInitialized) {
+        // We are interested in simple integer constants here.
+        // Type check could be s->type == "const_int" or similar if very strict.
+        // For constant folding, as long as it has a valid integer s->value.
+        outValue = s->value;
+        return true;
+    }
+
+    return false;
 }
 
