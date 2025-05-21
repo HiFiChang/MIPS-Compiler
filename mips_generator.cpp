@@ -13,35 +13,17 @@ MipsGenerator::MipsGenerator(const std::string& outputFileName, SymbolTable& st,
     if (!mipsFile.is_open()) {
         throw std::runtime_error("MipsGenerator: Could not open output file: " + outputFileName);
     }
-    // 打开调试日志文件
-    debugLogFile.open("mips_debug_log.txt");
-    if (!debugLogFile.is_open()) {
-        // 如果无法打开调试日志文件，可以选择抛出错误或在控制台打印警告后继续
-        std::cerr << "MipsGenerator: WARNING: Could not open debug log file: mips_debug_log.txt. Debug logs will be disabled." << std::endl;
-    } else {
-        debugLogFile << "MipsGenerator Debug Log Started" << std::endl;
-    }
-
-    std::cout << "MipsGenerator instance created. Outputting to: " << outputFileName << std::endl;
 }
 
 MipsGenerator::~MipsGenerator() {
     if (mipsFile.is_open()) {
-        std::cout << "Closing MIPS output file handled by MipsGenerator: " << mipsFile.is_open() << std::endl; // Log before close
         mipsFile.close();
-    }
-    // 关闭调试日志文件
-    if (debugLogFile.is_open()) {
-        debugLogFile << "MipsGenerator Debug Log Ended" << std::endl;
-        debugLogFile.close();
     }
 }
 
 // Helper to get MIPS operand string (e.g., register, immediate, memory address)
 std::string MipsGenerator::getMipsOperand(const std::string& operandId, const std::string& targetRegForAddr, bool loadAddr) {
     if (operandId.empty() || operandId == "_" || operandId == "-") return "";
-
-    if (debugLogFile.is_open()) debugLogFile << "MIPS_GET_OPERAND_DEBUG: Called for operandId='" << operandId << "', loadAddr=" << loadAddr << std::endl;
 
     // 1. Check if it's an integer literal
     bool isNumeric = !operandId.empty();
@@ -61,10 +43,8 @@ std::string MipsGenerator::getMipsOperand(const std::string& operandId, const st
     }
 
     // 2. Check if it's a known local/param/temp for the current function via tempVarOffsets
-    if (debugLogFile.is_open()) debugLogFile << "MIPS_GET_OPERAND_DEBUG: Checking tempVarOffsets for '" << operandId << "' in function '" << this->currentFunctionName << "'" << std::endl;
     if (tempVarOffsets.count(operandId)) {
         int offset = tempVarOffsets.at(operandId);
-        if (debugLogFile.is_open()) debugLogFile << "MIPS_GET_OPERAND_DEBUG: Found '" << operandId << "' in tempVarOffsets with offset " << offset << std::endl;
         if (loadAddr) {
             mipsFile << "    addiu " << targetRegForAddr << ", $fp, " << offset << "  # Get address of " << operandId << "\n";
             return targetRegForAddr; // The register now holds the address
@@ -80,13 +60,11 @@ std::string MipsGenerator::getMipsOperand(const std::string& operandId, const st
             return targetRegForAddr;
         }
         return globalSym->name; // Global variable label or string literal label
-    } else {
-        if (debugLogFile.is_open()) debugLogFile << "MIPS_GET_OPERAND_DEBUG: Symbol '" << operandId << "' not found as global or string literal via symTab.lookupSymbol." << std::endl;
     }
     
     // 4. If not found elsewhere, assume it's a code label
     if (loadAddr) {
-        if (debugLogFile.is_open()) debugLogFile << "MIPS_WARNING: Attempting to loadAddr of what appears to be a code label: " << operandId << std::endl;
+        // This case might indicate an issue if operandId is not a valid label for `la`.
         mipsFile << "    la " << targetRegForAddr << ", " << operandId << " # Load address of label " << operandId << " (Potentially an issue!)\n";
         return targetRegForAddr;
     }
@@ -248,8 +226,6 @@ void MipsGenerator::generateTextSection() {
 
             if (symTab.functionLocalSymbols.count(this->currentFunctionName)) {
                 const std::vector<Symbol>& symbolsForFunction = symTab.functionLocalSymbols.at(this->currentFunctionName);
-                if (debugLogFile.is_open()) debugLogFile << "MIPS_DEBUG: Func '" << this->currentFunctionName 
-                          << "', Loading " << symbolsForFunction.size() << " symbols from stored functionLocalSymbols (vector)." << std::endl;
                 for (const Symbol& symbolEntry : symbolsForFunction) { // Iterate directly over Symbol objects
                     const std::string& originalSymbolName = symbolEntry.name;
                     std::string keyForTempVarOffsets = originalSymbolName;
@@ -257,24 +233,11 @@ void MipsGenerator::generateTextSection() {
                     if (!symbolEntry.isGlobal && !isIRGeneratedName && !this->currentFunctionName.empty()) {
                         keyForTempVarOffsets = "__" + this->currentFunctionName + "_" + originalSymbolName + "_s" + std::to_string(symbolEntry.scopeLevel);
                     }
-                    if (debugLogFile.is_open()) debugLogFile << "MIPS_FUNC_BEGIN_DEBUG: Processing symbol for tempVarOffsets: originalName='" << originalSymbolName 
-                              << "', isGlobal=" << symbolEntry.isGlobal
-                              << ", isIRGeneratedName=" << isIRGeneratedName 
-                              << ", scopeLevel=" << symbolEntry.scopeLevel
-                              << ", computedKey='" << keyForTempVarOffsets 
-                              << ", offset=" << symbolEntry.offset 
-                              << ", type='" << symbolEntry.type << "'"
-                              << (symbolEntry.isParam ? " (Param)" : "") << std::endl;
                     tempVarOffsets[keyForTempVarOffsets] = symbolEntry.offset;
                 }
-            } else {
-                 if (debugLogFile.is_open()) debugLogFile << "MIPS_GEN_WARNING: Function '" << this->currentFunctionName 
-                          << "' not found in symTab.functionLocalSymbols map (vector)." << std::endl;
             }
 
             if (funcSym && !funcSym->params.empty()) {
-                mipsFile << "    # MIPS_DEBUG: Processing params for func: " << this->currentFunctionName << "\n";
-
                 // Step 1: Handle stack-passed parameters first to avoid overwriting them
                 // before they are moved to their final designated slots.
                 mipsFile << "    # Step 1: Secure stack-passed parameters by moving them to final slots\n";
@@ -291,7 +254,8 @@ void MipsGenerator::generateTextSection() {
                         } else if (paramSym && paramSym->isParam) {
                             targetOffset = paramSym->offset; 
                         } else {
-                             if(debugLogFile.is_open()) debugLogFile << "MIPS_GEN_ERROR: Param symbol '" << paramInfo.first << "' not found or tempVarOffsets issue for " << this->currentFunctionName << " in param pre-saving step." << std::endl;
+                             // Error case: Param symbol not found or offset issue.
+                             // Consider adding std::cerr logging here if this is a critical error.
                         }
 
                         // Corrected calculation for actual_stack_loc_offset
@@ -325,7 +289,8 @@ void MipsGenerator::generateTextSection() {
                         } else if (paramSym && paramSym->isParam) {
                             targetOffset = paramSym->offset;
                         } else {
-                            if(debugLogFile.is_open()) debugLogFile << "MIPS_GEN_ERROR: Param symbol '" << paramInfo.first << "' not found or tempVarOffsets issue for " << this->currentFunctionName << " in register param storing step." << std::endl;
+                            // Error case: Param symbol not found or offset issue.
+                            // Consider adding std::cerr logging here if this is a critical error.
                         }
 
                         mipsFile << "    sw $a" << i << ", " << targetOffset << "($fp)  # Store register param '" << paramInfo.first << "' (from $a" << i << ") to its designated stack slot\n";
@@ -439,7 +404,7 @@ void MipsGenerator::generateTextSection() {
                 mipsFile << "    la $a0, " << strSym->name << "\n";
                 mipsFile << "    syscall\n";
             } else {
-                if (debugLogFile.is_open()) debugLogFile << "MIPS Gen Error: String literal " << quad.arg1 << " not found for PRINT_STR." << std::endl;
+                std::cerr << "MIPS Gen Error: String literal " << quad.arg1 << " not found for PRINT_STR." << std::endl;
             }
         } else if (quad.op == "PRINT_INT") {
             loadToReg(quad.arg1, "$a0");
@@ -457,13 +422,7 @@ void MipsGenerator::generateTextSection() {
 
 void MipsGenerator::generate() {
     if (!mipsFile.is_open()) {
-        // std::cerr << "MipsGenerator Error: Output file is not open. Cannot generate MIPS." << std::endl;
-        // 如果 mipsFile 本身都打不开，调试日志可能也无济于事，但可以尝试记录到调试日志或标准错误
-        if (debugLogFile.is_open()) {
-            debugLogFile << "MipsGenerator Error: MIPS Output file is not open. Cannot generate MIPS." << std::endl;
-        } else {
-            std::cerr << "MipsGenerator Error: MIPS Output file is not open. Cannot generate MIPS. Debug log also unavailable." << std::endl;
-        }
+        std::cerr << "MipsGenerator Error: MIPS Output file is not open. Cannot generate MIPS." << std::endl;
         return;
     }
     mipsFile.clear(); //确保流状态良好
@@ -474,12 +433,7 @@ void MipsGenerator::generate() {
     generateTextSection();  // 直接使用 this->quads 和 this->mipsFile
 
     this->mipsFile.flush(); // 确保所有内容都写入文件
-    // std::cout << "MIPS generation complete for current MipsGenerator instance." << std::endl;
-    if (debugLogFile.is_open()) {
-        debugLogFile << "MIPS generation complete for current MipsGenerator instance. Output to: " << mipsFile.is_open() /* Placeholder for filename, ideally pass filename to constructor and store */ << std::endl;
-    } else {
-        std::cout << "MIPS generation complete for current MipsGenerator instance." << std::endl;
-    }
+    std::cout << "MIPS generation complete for current MipsGenerator instance." << std::endl;
 }
 
 // Helper function to determine if an operand is an immediate integer

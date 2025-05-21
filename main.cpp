@@ -1,9 +1,8 @@
 #include "lexer.h"
 #include "syntax_analyzer.h"
-#include "symboltable.h"
+#include "symbol_table.h"
 #include "ir_generator.h"
 #include "mips_generator.h"
-// #include "mips_reorder_utils.h"
 #include <iostream>
 #include <exception>
 #include <fstream>

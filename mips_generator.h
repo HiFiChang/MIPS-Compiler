@@ -7,7 +7,7 @@
 #include <map>
 
 // Need full definitions for SymbolTable and Quadruple as MipsGenerator uses them directly.
-#include "symboltable.h" // Provides Symbol and SymbolTable
+#include "symbol_table.h" // Provides Symbol and SymbolTable
 #include "ir_generator.h"   // Provides Quadruple (which includes ir_def.h)
 
 class MipsGenerator {

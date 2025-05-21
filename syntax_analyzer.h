@@ -2,7 +2,7 @@
 #define MINE_SYNTAX_ANALYZER_H_
 
 #include "lexer.h"        
-#include "symboltable.h"  
+#include "symbol_table.h"  
 #include "ir_generator.h" 
 
 #include <vector>
