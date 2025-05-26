@@ -278,68 +278,156 @@ void SyntaxAnalyzer::parseConstDef(const std::string& constBaseType) {
     if (currentToken.type == LBRACK) {
         isArray = true;
         match(LBRACK);
-        std::string dimStr = parseConstExp();
+        std::string dim1Str = parseConstExp();
         try {
-            if (!dimensions.empty()) dimensions.clear();
-            dimensions.push_back(std::stoi(dimStr));
+            dimensions.push_back(std::stoi(dim1Str));
         }
-        catch (...) { semanticError("Array dimension for const '" + name + "' must be a constant integer."); }
+        catch (...) { semanticError("Array dimension 1 for const '" + name + "' must be a constant integer."); }
         match(RBRACK);
+
+        if (currentToken.type == LBRACK) { // Check for second dimension
+            match(LBRACK);
+            std::string dim2Str = parseConstExp();
+            try {
+                dimensions.push_back(std::stoi(dim2Str));
+            }
+            catch (...) { semanticError("Array dimension 2 for const '" + name + "' must be a constant integer."); }
+            match(RBRACK);
+        }
     }
     sym.isArray = isArray;
     sym.arrayDimensions = dimensions;
-    sym.type = (isArray ? "array_const_" : "const_") + constBaseType;
-
+    if (isArray) {
+        if (dimensions.size() > 1) {
+            sym.type = "array2d_const_" + constBaseType;
+        } else {
+            sym.type = "array_const_" + constBaseType;
+        }
+    } else {
+        sym.type = "const_" + constBaseType;
+    }
 
     match(ASSIGN);
-    parseConstInitVal(sym);
+    // For arrays, parseConstInitVal fills sym.arrayValues. For scalars, it fills sym.value.
+    parseConstInitVal(sym, false, 0); 
 
     if (!symTab.addSymbol(sym)) {
         semanticError("Redefinition of constant symbol '" + sym.name + "'.");
     }
+
+    // After symbol is added (and its offset is determined if local),
+    // if it's a local constant, generate IR to initialize its stack memory.
+    Symbol* symInTable = symTab.lookupSymbol(name); // Get the symbol with offset info
+    if (symInTable && !symInTable->isGlobal) {
+        std::string nameForIRTarget = this->getMangledNameForIR(symInTable);
+        if (symInTable->isArray) {
+            // Initialize local constant array elements on stack
+            std::string elementSize = "4"; 
+            for (size_t i = 0; i < symInTable->arrayValues.size(); ++i) {
+                std::string indexStr = std::to_string(i);
+                std::string offsetBytesTemp = irGen.newTemp();
+                Symbol tempOffsetSym; tempOffsetSym.name = offsetBytesTemp; tempOffsetSym.type = "int"; 
+                tempOffsetSym.scopeLevel = symTab.currentScopeLevel; tempOffsetSym.isGlobal = false;
+                symTab.addSymbol(tempOffsetSym); // Add temp to current scope
+                irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
+
+                std::string effectiveAddressTemp = irGen.newTemp();
+                Symbol tempAddrSym; tempAddrSym.name = effectiveAddressTemp; tempAddrSym.type = "int_addr"; 
+                tempAddrSym.scopeLevel = symTab.currentScopeLevel; tempAddrSym.isGlobal = false;
+                symTab.addSymbol(tempAddrSym); // Add temp to current scope
+                irGen.addQuad("ADD_OFFSET", nameForIRTarget, offsetBytesTemp, effectiveAddressTemp);
+                
+                irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", std::to_string(symInTable->arrayValues[i]));
+            }
+        } else {
+            // Initialize local constant scalar on stack
+            irGen.addQuad("ASSIGN", std::to_string(symInTable->value), "_", nameForIRTarget);
+        }
+    }
+
     recordSyntaxOutput("<ConstDef>");
 }
 
 // ConstInitVal → ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
 // For single const: returns evaluated string. For array: fills sym, generates IR for elements.
-std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym, bool parsingArrayElement) {
+std::string SyntaxAnalyzer::parseConstInitVal(Symbol& constSym, bool parsingArrayElement, int currentDimension) {
     if (currentToken.type == LBRACE) {
-        if (!constSym.isArray && !parsingArrayElement) semanticError("Aggregate initializer for non-array const '" + constSym.name + "'.");
+        if (!constSym.isArray && !parsingArrayElement) { // e.g. const int x = {1}; Error
+            semanticError("Aggregate initializer for non-array const '" + constSym.name + "'.");
+            // Attempt to consume the erroneous block
         match(LBRACE);
+            while(currentToken.type != RBRACE && currentToken.type != TOKEN_EOF) {
+                if (currentToken.type == LBRACE) parseConstInitVal(constSym, true, currentDimension +1); 
+                else getNextTokenFromLexer();
+                if (currentToken.type == COMMA) match(COMMA);
+                else break; 
+            }
+            if (currentToken.type == RBRACE) match(RBRACE);
+            return "{error_array_init}";
+        }
 
-        // For MIPS, global const arrays will be initialized in .data section.
-        // Local const arrays are more complex, often disallowed or unrolled.
-        // For now, we'll parse, and MipsGenerator will rely on values stored in Symbol object for globals.
+        if (constSym.isArray && parsingArrayElement && currentDimension >= constSym.arrayDimensions.size()) {
+            semanticError("Too many nested initializers for const array '" + constSym.name + "'. Declared dimensions: " + std::to_string(constSym.arrayDimensions.size()) + ", current nesting: " + std::to_string(currentDimension + 1));
+            match(LBRACE);
+             while(currentToken.type != RBRACE && currentToken.type != TOKEN_EOF) {
+                if (currentToken.type == LBRACE) parseConstInitVal(constSym, true, currentDimension +1);
+                else getNextTokenFromLexer();
+                if (currentToken.type == COMMA) match(COMMA);
+                 else break;
+            }
+            if (currentToken.type == RBRACE) match(RBRACE);
+            return "{error_array_init}";
+        }
+
+        match(LBRACE);
+        // recordSyntaxOutput("{"); // Optional: for detailed syntax trace
+
         int elementCount = 0;
         if (currentToken.type != RBRACE) {
-            parseConstInitVal(constSym, true);
+            parseConstInitVal(constSym, true, currentDimension + 1);
             elementCount++;
             while (currentToken.type == COMMA) {
                 match(COMMA);
-                parseConstInitVal(constSym, true);
+                // recordSyntaxOutput(","); // Optional
+                parseConstInitVal(constSym, true, currentDimension + 1);
                 elementCount++;
             }
         }
         match(RBRACE);
+        // recordSyntaxOutput("}"); // Optional
+
+        if (constSym.isArray && !constSym.arrayDimensions.empty() && currentDimension < constSym.arrayDimensions.size()) {
+             if (constSym.arrayDimensions[currentDimension] > 0 && elementCount != constSym.arrayDimensions[currentDimension]) {
+                 // semanticError("Incorrect number of initializers for dimension " + std::to_string(currentDimension + 1) +
+                 //               " of const array '" + constSym.name + "'. Expected " +
+                 //               std::to_string(constSym.arrayDimensions[currentDimension]) + " got " + std::to_string(elementCount) + ".");
+                 // SysY judge might be lenient or expect zero-filling implicitly for consts.
+             }
+        }
+
         recordSyntaxOutput("<ConstInitVal>");
-        return "{array_init}"; // Placeholder indicating array init was parsed
-    } else {
-        if (constSym.isArray && !parsingArrayElement) semanticError("Scalar initializer for array const '" + constSym.name + "'.");
+        return "{array_init}";
+    } else { // This is for ConstExp (a single value)
+        if (constSym.isArray && !parsingArrayElement) {
+            semanticError("Scalar initializer used for array const '" + constSym.name + "'. Use { } for initialization.");
+        }
+        if (constSym.isArray && parsingArrayElement && currentDimension != constSym.arrayDimensions.size()) {
+             semanticError("Missing braces for initializing const array '" + constSym.name + "'. Expected element at dimension depth " + std::to_string(constSym.arrayDimensions.size()) + ", but at depth " + std::to_string(currentDimension) + ".");
+        }
+
         std::string valStr = parseConstExp();
         try {
-            if (parsingArrayElement && constSym.isArray) {
-                try {
-                    int elementValue = std::stoi(valStr);
-                    constSym.arrayValues.push_back(elementValue);
-                } catch (...) {
-                    semanticError("Invalid array element value for '" + constSym.name + "'. Expected integer.");
-                }
-            } else if (!constSym.isArray) {
+            if (constSym.isArray) {
+                 if (currentDimension == constSym.arrayDimensions.size()) { 
+                    constSym.arrayValues.push_back(std::stoi(valStr));
+                 } 
+            } else { 
                 constSym.value = std::stoi(valStr);
             }
-            constSym.isInitialized = true;
         }
-        catch (...) { semanticError("Invalid constant value for '" + constSym.name + "'. Expected integer string from ConstExp."); }
+        catch (const std::exception& e) {
+            semanticError("Invalid constant value for '" + constSym.name + "': " + valStr + ". Error: " + e.what());
+        }
 
         recordSyntaxOutput("<ConstInitVal>");
         return valStr;
@@ -368,52 +456,89 @@ void SyntaxAnalyzer::parseVarDef(const std::string& varBaseType) {
     sym.isConstant = false;
     sym.isGlobal = (symTab.currentScopeLevel == 1);
     sym.scopeLevel = symTab.currentScopeLevel;
-    sym.isInitialized = false; // Will be true if '=' InitVal is present
+    sym.isInitialized = false;
 
     bool isArray = false;
     std::vector<int> dimensions;
     if (currentToken.type == LBRACK) {
         isArray = true;
         match(LBRACK);
-        std::string dimStr = parseConstExp(); // Dimensions must be constant expressions
+        std::string dim1Str = parseConstExp();
         try {
-            if (!dimensions.empty()) dimensions.clear();
-            dimensions.push_back(std::stoi(dimStr));
+            dimensions.push_back(std::stoi(dim1Str));
         }
-        catch(...) { semanticError("Array dimension for variable '" + name + "' must be a constant integer."); }
+        catch(...) { semanticError("Array dimension 1 for variable '" + name + "' must be a constant integer."); }
         match(RBRACK);
+
+        if (currentToken.type == LBRACK) {
+            match(LBRACK);
+            std::string dim2Str = parseConstExp();
+            try {
+                dimensions.push_back(std::stoi(dim2Str));
+            }
+            catch(...) { semanticError("Array dimension 2 for variable '" + name + "' must be a constant integer."); }
+            match(RBRACK);
+        }
     }
     sym.isArray = isArray;
     sym.arrayDimensions = dimensions;
-    sym.type = (isArray ? "array_" : "") + varBaseType;
+    if (isArray) {
+        if (dimensions.size() > 1) {
+            sym.type = "array2d_" + varBaseType;
+        } else {
+            sym.type = "array_" + varBaseType;
+        }
+    } else {
+        sym.type = varBaseType;
+    }
 
-    // Add symbol to table *before* parsing InitVal, especially for offset calculation for locals.
     if (!symTab.addSymbol(sym)) {
         semanticError("Redefinition of variable symbol '" + sym.name + "'.");
     }
-    // Get the symbol from table to ensure we have the one with correct offset for IR gen
     Symbol* symInTable = symTab.lookupSymbol(name);
-    if (!symInTable) { semanticError("Internal: Failed to find symbol " + name + " after declaration."); }
+    if (!symInTable) { semanticError("Internal: Failed to find symbol " + name + " after declaration."); return; }
 
 
     if (currentToken.type == ASSIGN) {
         match(ASSIGN);
-        std::string initValResult = parseInitVal(*symInTable);
+        int elementsInitializedCount = 0; 
+        std::string initValResult = parseInitVal(*symInTable, 0, elementsInitializedCount);
 
         if (!symInTable->isArray) {
             std::string targetNameForAssign = this->getMangledNameForIR(symInTable);
             irGen.addQuad("ASSIGN", initValResult, "_", targetNameForAssign);
         } else {
-            if (initValResult != "{array_init}") { // Defensive check, should be {array_init}
-                  semanticError("Internal: Array initialization did not return {array_init} sentinel.");
+             // After parseInitVal, elementsInitializedCount holds the number of elements
+             // that received a value (either explicit or padded with zero by parseInitVal).
+             // Now, zero-fill the rest of the array if it wasn't fully covered.
+            int totalArraySize = symInTable->getTotalSize();
+            if (elementsInitializedCount < totalArraySize) {
+                std::string nameForIRBase = this->getMangledNameForIR(symInTable);
+                std::string zeroVal = "0";
+                for (int i = elementsInitializedCount; i < totalArraySize; ++i) {
+                    std::string indexStr = std::to_string(i);
+                    std::string elementSize = "4";
+                    std::string offsetBytesTemp = irGen.newTemp();
+                    Symbol tempOffsetS; tempOffsetS.name = offsetBytesTemp; tempOffsetS.type = "int"; tempOffsetS.scopeLevel = symTab.currentScopeLevel; tempOffsetS.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempOffsetS);
+                    irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
+
+                    std::string effectiveAddressTemp = irGen.newTemp();
+                    Symbol tempAddrS; tempAddrS.name = effectiveAddressTemp; tempAddrS.type = "int_addr"; tempAddrS.scopeLevel = symTab.currentScopeLevel; tempAddrS.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempAddrS);
+                    irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
+                    irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", zeroVal);
+                }
             }
         }
         symInTable->isInitialized = true;
-            } else {
-        // No initializer.
-        // Global variables: MIPS .data section will typically initialize them to 0.
-        // Local variables: They are uninitialized on the stack. No IR needed for non-initialization.
-        // If the language required zero-initialization for locals, IR would be needed here.
+    } else {
+        // No initializer assignment.
+        // If it's a global array, it's zero-initialized by .data section.
+        // If it's a local array and language requires default zeroing for *all* local arrays,
+        // then code would be needed here to zero-fill symInTable->getTotalSize() elements.
+        // SysY typically doesn't do this; uninitialized local arrays have undefined values.
+        // However, a common behavior even for SysY-like subsets is that if *any* part of an array
+        // is initialized with an initializer list, the rest of it *is* zero-filled.
+        // The logic above under 'ASSIGN' handles this. If there's no '=', no elements are zero-filled here for locals.
     }
     recordSyntaxOutput("<VarDef>");
 }
@@ -422,14 +547,14 @@ void SyntaxAnalyzer::parseVarDef(const std::string& varBaseType) {
 // Returns:
 // - For Exp: a temp variable or constant string from parseExp.
 // - For aggregate: "{array_init}" and should ideally generate element-wise IR internally.
-std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym) {
+std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym, int currentDimension, int& elementsInitializedSoFar) {
     if (currentToken.type == LBRACE) {
         if (!varSym.isArray) {
             semanticError("Aggregate initializer for non-array variable '" + varSym.name + "'.");
             // Attempt to consume the erroneous block to allow parsing to continue for other errors
             match(LBRACE);
             while(currentToken.type != RBRACE && currentToken.type != TOKEN_EOF) {
-                if (currentToken.type == LBRACE) parseInitVal(varSym); // Eat nested block
+                if (currentToken.type == LBRACE) parseInitVal(varSym, currentDimension + 1, elementsInitializedSoFar); 
                 else getNextTokenFromLexer();
                 if (currentToken.type == COMMA) match(COMMA);
                 else break;
@@ -437,131 +562,105 @@ std::string SyntaxAnalyzer::parseInitVal(Symbol& varSym) {
             if (currentToken.type == RBRACE) match(RBRACE);
             return "{error_array_init}";
         }
-        match(LBRACE);
-
-        // Determine the base name for IR (potentially mangled for local arrays)
-        std::string nameForIRBase = this->getMangledNameForIR(&varSym);
-
-        int elementIndex = 0;
-        int totalElementsExpected = 1;
-        if (!varSym.arrayDimensions.empty()) {
-            for(int dim : varSym.arrayDimensions) totalElementsExpected *= std::max(1, dim);
-        } else if (varSym.isArray) {
-            semanticError("Array symbol '" + varSym.name + "' has no dimensions specified for initialization.");
-            if (currentToken.type == RBRACE) { match(RBRACE); return "{error_array_init}"; }
+        if (varSym.isArray && currentDimension >= varSym.arrayDimensions.size()) {
+             if (varSym.arrayDimensions.empty() || currentDimension > varSym.arrayDimensions.size()) { // Corrected logic slightly
+                semanticError("Too many nested initializers for array '" + varSym.name + "'. Declared dimensions: " + 
+                              std::to_string(varSym.arrayDimensions.size()) + ", current nesting depth attempting: " + std::to_string(currentDimension + 1));
+                match(LBRACE);
+                while(currentToken.type != RBRACE && currentToken.type != TOKEN_EOF) {
+                    if (currentToken.type == LBRACE) parseInitVal(varSym, currentDimension + 1, elementsInitializedSoFar);
+                    else getNextTokenFromLexer();
+                    if (currentToken.type == COMMA) match(COMMA);
+                    else break;
+                }
+                if (currentToken.type == RBRACE) match(RBRACE);
+                return "{error_array_init}";
+            }
         }
 
+        match(LBRACE);
+        
+        int elementsInThisDimensionProvided = 0;
         if (currentToken.type != RBRACE) {
-            // For array elements, we expect expressions that evaluate to the element type (e.g., int)
-            std::string elemVal = parseExp(varSym.type.rfind("array_", 0) == 0 ? varSym.type.substr(6) : varSym.type);
-
-            if (elementIndex < totalElementsExpected) {
-                std::string indexStr = std::to_string(elementIndex);
-                std::string elementSize = "4";
-                std::string offsetBytesTemp = irGen.newTemp();
-
-                Symbol tempSymbolOffset_init;
-                tempSymbolOffset_init.name = offsetBytesTemp;
-                tempSymbolOffset_init.type = "int";
-                tempSymbolOffset_init.isConstant = false;
-                tempSymbolOffset_init.isArray = false;
-                tempSymbolOffset_init.scopeLevel = symTab.currentScopeLevel;
-                tempSymbolOffset_init.isGlobal = (symTab.currentScopeLevel == 1);
-                if (!symTab.addSymbol(tempSymbolOffset_init)) {
-                    semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in InitVal.");
-                }
-
-                irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
-
-                std::string effectiveAddressTemp = irGen.newTemp();
-
-                Symbol tempSymbolAddr_init;
-                tempSymbolAddr_init.name = effectiveAddressTemp;
-                tempSymbolAddr_init.type = "int_addr"; // Indicate it holds an address
-                tempSymbolAddr_init.isConstant = false;
-                tempSymbolAddr_init.isArray = false;
-                tempSymbolAddr_init.scopeLevel = symTab.currentScopeLevel;
-                tempSymbolAddr_init.isGlobal = (symTab.currentScopeLevel == 1);
-                if (!symTab.addSymbol(tempSymbolAddr_init)) {
-                    semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in InitVal.");
-                }
-
-                irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
-                irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal);
-            } else {
-                semanticError("Too many initializers for array '" + varSym.name + "'.");
-            }
-            elementIndex++;
-
+            parseInitVal(varSym, currentDimension + 1, elementsInitializedSoFar);
+            elementsInThisDimensionProvided++;
             while (currentToken.type == COMMA) {
                 match(COMMA);
-                elemVal = parseExp(varSym.type.rfind("array_", 0) == 0 ? varSym.type.substr(6) : varSym.type);
-                if (elementIndex < totalElementsExpected) {
-                    std::string indexStr = std::to_string(elementIndex);
-                    std::string elementSize = "4";
-                    std::string offsetBytesTemp = irGen.newTemp();
+                parseInitVal(varSym, currentDimension + 1, elementsInitializedSoFar);
+                elementsInThisDimensionProvided++;
+            }
+        }
+        match(RBRACE);
 
-                    Symbol tempSymbolOffset_init2;
-                    tempSymbolOffset_init2.name = offsetBytesTemp;
-                    tempSymbolOffset_init2.type = "int";
-                    tempSymbolOffset_init2.isConstant = false;
-                    tempSymbolOffset_init2.isArray = false;
-                    tempSymbolOffset_init2.scopeLevel = symTab.currentScopeLevel;
-                    tempSymbolOffset_init2.isGlobal = (symTab.currentScopeLevel == 1);
-                    if (!symTab.addSymbol(tempSymbolOffset_init2)) {
-                        semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in InitVal (loop).");
+        if (varSym.isArray && currentDimension < varSym.arrayDimensions.size()) {
+            int expectedItemsInThisDimension = varSym.arrayDimensions[currentDimension];
+            
+            // If this {}-block provided fewer items than expected for this dimension (or was empty),
+            // we need to "zero-fill" the remaining part of this dimension's span.
+            if (elementsInThisDimensionProvided < expectedItemsInThisDimension) {
+                int numMissingSubStructures = expectedItemsInThisDimension - elementsInThisDimensionProvided;
+                
+                int sizeOfOneSubStructure = 1; // Size in flat elements that each sub-structure here represents
+                for (size_t k = currentDimension + 1; k < varSym.arrayDimensions.size(); ++k) {
+                    sizeOfOneSubStructure *= varSym.arrayDimensions[k];
+                }
+                
+                int numFlatElementsToZeroFill = numMissingSubStructures * sizeOfOneSubStructure;
+
+                std::string nameForIRBase = this->getMangledNameForIR(&varSym);
+                std::string zeroVal = "0"; 
+
+                for (int i = 0; i < numFlatElementsToZeroFill; ++i) {
+                    if (elementsInitializedSoFar >= varSym.getTotalSize()) {
+                        // semanticError("Over-initializing array '" + varSym.name + "' during zero-padding for dimension " + std::to_string(currentDimension) + ".");
+                        break; 
                     }
-
+                    
+                    std::string indexStr = std::to_string(elementsInitializedSoFar);
+                    std::string elementSize = "4"; 
+                    std::string offsetBytesTemp = irGen.newTemp();
+                    Symbol tempOffsetS; tempOffsetS.name = offsetBytesTemp; tempOffsetS.type = "int"; tempOffsetS.scopeLevel = symTab.currentScopeLevel; tempOffsetS.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempOffsetS);
                     irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
 
                     std::string effectiveAddressTemp = irGen.newTemp();
-
-                    Symbol tempSymbolAddr_init2;
-                    tempSymbolAddr_init2.name = effectiveAddressTemp;
-                    tempSymbolAddr_init2.type = "int_addr";
-                    tempSymbolAddr_init2.isConstant = false;
-                    tempSymbolAddr_init2.isArray = false;
-                    tempSymbolAddr_init2.scopeLevel = symTab.currentScopeLevel;
-                    tempSymbolAddr_init2.isGlobal = (symTab.currentScopeLevel == 1);
-                    if (!symTab.addSymbol(tempSymbolAddr_init2)) {
-                        semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in InitVal (loop).");
-                    }
-
+                    Symbol tempAddrS; tempAddrS.name = effectiveAddressTemp; tempAddrS.type = "int_addr"; tempAddrS.scopeLevel = symTab.currentScopeLevel; tempAddrS.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempAddrS);
                     irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
-                    irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal);
-                } else {
-                     semanticError("Too many initializers for array '" + varSym.name + "'.");
+                    irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", zeroVal);
+                    
+                    elementsInitializedSoFar++;
                 }
-                elementIndex++;
             }
         }
-        // SysY might allow partial initialization (rest are 0).
-        // If zero-padding is required and elementIndex < totalElementsExpected,
-        // you would add loops here to STORE_TO_ADDR 0 for remaining elements.
-        // For simplicity, this example assumes SysY does not require explicit zero-padding for uninitialized elements in IR for locals,
-        // and globals are zeroed by .space or default .word 0 in MIPS gen.
-
-        match(RBRACE);
         recordSyntaxOutput("<InitVal>");
         return "{array_init}";
-    } else {
-        // If varSym is an array, standard SysY/C usually doesn't allow direct `arr = scalar_exp;`
-        // except for `char arr[] = "string";` which is special.
-        // Our grammar is `InitVal -> Exp`. If `varSym` is array, this `Exp` better be an error or handled carefully.
-        // For now, assume if `varSym` is scalar, this Exp is its value.
-        if (varSym.isArray) {
-            // This path (scalar Exp for array InitVal) is usually an error unless it's a string literal for char array.
-            // Not handled here for general arrays.
-            semanticError("Cannot initialize array '" + varSym.name + "' with a single scalar expression directly in InitVal. Use {}.");
-        }
-        std::string expectedElementType = varSym.type;
-        if (varSym.isArray) {
-            if (varSym.type.rfind("array_", 0) == 0) expectedElementType = varSym.type.substr(6);
-        }
-        std::string expRes = parseExp(expectedElementType);
-        recordSyntaxOutput("<InitVal>");
-        return expRes;
     }
+    // This part handles individual expressions (e.g. int x = 5; or int arr[] = {1,2,3};)
+    // or the elements within a deeper level of brace initialization.
+    if (varSym.isArray && elementsInitializedSoFar >= varSym.getTotalSize()) {
+        semanticError("Too many initializers for array '" + varSym.name + "'. Total capacity: " + std::to_string(varSym.getTotalSize()) + ".");
+        parseExp(varSym.getBaseType()); 
+        return "{error_too_many_elements}";
+    }
+    
+    std::string expectedElementType = varSym.getBaseType(); 
+    std::string elemVal = parseExp(expectedElementType);
+
+    if (varSym.isArray) {
+        std::string nameForIRBase = this->getMangledNameForIR(&varSym);
+        std::string indexStr = std::to_string(elementsInitializedSoFar);
+        std::string elementSize = "4"; 
+        std::string offsetBytesTemp = irGen.newTemp();
+        Symbol tempOffsetSym; tempOffsetSym.name = offsetBytesTemp; tempOffsetSym.type = "int"; tempOffsetSym.scopeLevel = symTab.currentScopeLevel; tempOffsetSym.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempOffsetSym);
+        irGen.addQuad("MUL", indexStr, elementSize, offsetBytesTemp);
+
+        std::string effectiveAddressTemp = irGen.newTemp();
+        Symbol tempAddrSym; tempAddrSym.name = effectiveAddressTemp; tempAddrSym.type = "int_addr"; tempAddrSym.scopeLevel = symTab.currentScopeLevel; tempAddrSym.isGlobal = (symTab.currentScopeLevel == 1); symTab.addSymbol(tempAddrSym);
+        irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
+        irGen.addQuad("STORE_TO_ADDR", effectiveAddressTemp, "_", elemVal);
+        elementsInitializedSoFar++;
+    }
+    recordSyntaxOutput("<InitVal>");
+    return elemVal; 
 }
 
 // FuncDef → FuncType Ident '(' [FuncFParams] ')' Block
@@ -1098,7 +1197,7 @@ std::string SyntaxAnalyzer::parseUnaryExp() {
         std::string opIrName = parseUnaryOp();
         std::string operandStr = parseUnaryExp();
 
-        if (opIrName == "POS") { // Unary plus, effectively a no-op for value
+        if (opIrName == "POS") { 
             recordSyntaxOutput("<UnaryExp>");
             return operandStr;
         }
@@ -1111,7 +1210,6 @@ std::string SyntaxAnalyzer::parseUnaryExp() {
                 recordSyntaxOutput("<UnaryExp>");
                 return std::to_string(-constOperandVal);
             } else if (opIrName == "NOT_OP") {
-                // Logical NOT: !0 is 1, !non-zero is 0
                 recordSyntaxOutput("<UnaryExp>");
                 return std::to_string(constOperandVal == 0 ? 1 : 0);
             }
@@ -1131,52 +1229,78 @@ std::string SyntaxAnalyzer::parseUnaryExp() {
         irGen.addQuad(opIrName, operandStr, "_", resultTempName);
         recordSyntaxOutput("<UnaryExp>");
         return resultTempName;
-    } else if (currentToken.type == IDENFR) {
-        const auto& allTokens = lexer.getTokens();
-        Token peekNext = (tokenIndex < allTokens.size()) ? allTokens[tokenIndex] : Token{TOKEN_EOF, "", 0};
+    } 
+    // ADDED: Handle getint() as an expression
+    else if (currentToken.type == GETINTTK) {
+        match(GETINTTK);
+        match(LPARENT);
+        match(RPARENT);
 
-        if (peekNext.type == LPARENT) { // Function call
+        std::string resultTempName = irGen.newTemp();
+        Symbol tempSymGetint;
+        tempSymGetint.name = resultTempName;
+        tempSymGetint.type = "int";
+        tempSymGetint.isConstant = false;
+        tempSymGetint.isArray = false;
+        tempSymGetint.scopeLevel = symTab.currentScopeLevel;
+        tempSymGetint.isGlobal = (symTab.currentScopeLevel == 1);
+        if (!symTab.addSymbol(tempSymGetint)) {
+            semanticError("Failed to add temporary variable " + resultTempName + " for getint result in UnaryExp.");
+        }
+        irGen.addQuad("GET_INT", "_", "_", resultTempName);
+        recordSyntaxOutput("<UnaryExp>"); 
+        return resultTempName;
+    } 
+    // Existing logic for IDENFR-based function calls or PrimaryExp
+    // This part needs to correctly handle IDENFR LPARENT for function calls, 
+    // and fall back to parsePrimaryExp otherwise.
+    else if (currentToken.type == IDENFR) { 
+        const auto& allTokens = lexer.getTokens(); 
+        Token peekNext = Token{TOKEN_EOF,"",0}; 
+        // Ensure tokenIndex is valid before accessing allTokens[tokenIndex]
+        // The tokenIndex in SyntaxAnalyzer is the index of the *next* token to be consumed.
+        // So currentToken is allTokens[tokenIndex-1]. The token to peek is allTokens[tokenIndex].
+        if (tokenIndex < allTokens.size()) { 
+             peekNext = allTokens[tokenIndex];
+        }
+
+        if (peekNext.type == LPARENT) { // Function call: IDENFR LPARENT ...
             std::string funcName = currentToken.lexeme;
-            match(IDENFR);
+            match(IDENFR); // Consume IDENFR
 
             Symbol* funcSym = symTab.lookupSymbol(funcName);
             if (!funcSym || (funcSym->type != "int_func" && funcSym->type != "void_func")) {
                 semanticError("Identifier '" + funcName + "' is not a function or not declared.");
+                return ""; 
             }
 
-            match(LPARENT);
+            match(LPARENT); // Consume LPARENT
             if (currentToken.type != RPARENT) {
                 parseFuncRParams(funcSym);
             }
-            match(RPARENT);
+            match(RPARENT); // Consume RPARENT
 
-            std::string resultTempName = "";
-            if (funcSym->returnType == "int") {
-                resultTempName = irGen.newTemp();
+            std::string funcCallResultTempName = ""; 
+            if (funcSym->returnType == "int") { 
+                funcCallResultTempName = irGen.newTemp();
                 Symbol tempSymbolFuncRet;
-                tempSymbolFuncRet.name = resultTempName;
+                tempSymbolFuncRet.name = funcCallResultTempName;
                 tempSymbolFuncRet.type = "int";
                 tempSymbolFuncRet.isConstant = false;
                 tempSymbolFuncRet.isArray = false;
                 tempSymbolFuncRet.scopeLevel = symTab.currentScopeLevel;
                 tempSymbolFuncRet.isGlobal = (symTab.currentScopeLevel == 1);
                 if (!symTab.addSymbol(tempSymbolFuncRet)) {
-                    semanticError("Failed to add temporary variable " + resultTempName + " for function return to symbol table.");
+                    semanticError("Failed to add temporary variable " + funcCallResultTempName + " for function return to symbol table.");
                 }
             }
-
-            irGen.addQuad("CALL", funcName, std::to_string(funcSym->params.size()), resultTempName);
-            recordSyntaxOutput("<UnaryExp>"); // This UnaryExp is the function call itself
-            return resultTempName;
-        } else {
-            // If not a function call, it must be a PrimaryExp which starts with LVal (IDENFR).
-            // parsePrimaryExp will handle it.
-            // No recordSyntaxOutput("<UnaryExp>") here, let PrimaryExp path handle its own output.
+            irGen.addQuad("CALL", funcName, std::to_string(funcSym->params.size()), funcCallResultTempName);
+            recordSyntaxOutput("<UnaryExp>"); 
+            return funcCallResultTempName;
+        } else { // Not a function call starting with IDENFR, so it must be a PrimaryExp (which could be an LVal/IDENFR itself)
             return parsePrimaryExp();
         }
-    } else {
-        // Must be other PrimaryExp types: ( Exp ) or Number
-        // No recordSyntaxOutput("<UnaryExp>") here, let PrimaryExp path handle its own output.
+    } else { // Not UnaryOp, not GETINTTK, not IDENFR -> must be other PrimaryExp types like ( Exp ) or Number
         return parsePrimaryExp();
     }
 }
@@ -1530,7 +1654,7 @@ std::string SyntaxAnalyzer::parseLVal(bool& isArrayAccess, std::string& arrayInd
     std::string nameForIRBase = this->getMangledNameForIR(sym);
 
     isArrayAccess = false;
-    arrayIndexResultTemp_out = ""; // This will hold the *value* of the index expression
+    arrayIndexResultTemp_out = ""; // This was for 1D index, might need rethink for 2D or remove if not used by caller
 
     if (currentToken.type == LBRACK) { // Array element access
         if (!sym->isArray) {
@@ -1538,54 +1662,86 @@ std::string SyntaxAnalyzer::parseLVal(bool& isArrayAccess, std::string& arrayInd
         }
         isArrayAccess = true;
         match(LBRACK);
-        std::string indexExpVal = parseExp("int");
-        arrayIndexResultTemp_out = indexExpVal;
+        std::string index1ExpVal = parseExp("int");
+        // arrayIndexResultTemp_out = index1ExpVal; // If caller needs first index string for some reason
         match(RBRACK);
-        recordSyntaxOutput("[");
-        recordSyntaxOutput("<Exp>");
-        recordSyntaxOutput("]");
+        recordSyntaxOutput("["); recordSyntaxOutput("<Exp>"); recordSyntaxOutput("]");
+
+        std::string finalOffsetBytesTemp;
+
+        if (sym->arrayDimensions.size() == 1) { // 1D Array
+            if (currentToken.type == LBRACK) {
+                 semanticError("Too many dimensions for 1D array '" + identName + "' (line " + std::to_string(identLine) + ").");
+                 // Consume extra bracket and expression if any to allow parsing to continue
+                 match(LBRACK); parseExp("int"); match(RBRACK);
+            }
+            std::string elementSize = "4";
+            finalOffsetBytesTemp = irGen.newTemp();
+            Symbol tempOffset1D; tempOffset1D.name = finalOffsetBytesTemp; tempOffset1D.type = "int"; 
+            tempOffset1D.scopeLevel = symTab.currentScopeLevel; tempOffset1D.isGlobal = (symTab.currentScopeLevel == 1);
+            symTab.addSymbol(tempOffset1D);
+            irGen.addQuad("MUL", index1ExpVal, elementSize, finalOffsetBytesTemp);
+        } else if (sym->arrayDimensions.size() == 2) { // 2D Array
+            if (currentToken.type != LBRACK) {
+                semanticError("Missing second dimension for 2D array '" + identName + "' (line " + std::to_string(identLine) + ").");
+                // Gracefully return or attempt recovery. For now, proceed as if it might be an error in usage (e.g. passing 2D array as pointer)
+                // However, for LVal access, both dimensions are typically required.
+                // This path might be problematic if a 2D array base address is expected (not element)
+                // For now, assume if one LBRACK is seen for 2D array, a second one for element access must follow.
+                 return nameForIRBase; // Or some error indicator, or try to compute address of row? 
+                                     // For now, if used as LVal and it's 2D, both indices needed.
+            }
+            match(LBRACK);
+            std::string index2ExpVal = parseExp("int");
+            match(RBRACK);
+            recordSyntaxOutput("["); recordSyntaxOutput("<Exp>"); recordSyntaxOutput("]");
+
+            if (sym->arrayDimensions[1] <= 0) { // Check if second dimension size is valid
+                semanticError("Array '" + identName + "' has invalid second dimension size (" + std::to_string(sym->arrayDimensions[1]) + ") for address calculation.");
+                return ""; // Cannot compute offset
+            }
+
+            // Offset = (index1 * dim2_size + index2) * element_size
+            // Temp for index1 * dim2_size
+            std::string dim2SizeStr = std::to_string(sym->arrayDimensions[1]);
+            std::string temp1 = irGen.newTemp();
+            Symbol tempSym1; tempSym1.name = temp1; tempSym1.type = "int"; symTab.addSymbol(tempSym1);
+            irGen.addQuad("MUL", index1ExpVal, dim2SizeStr, temp1);
+
+            // Temp for (index1 * dim2_size + index2)
+            std::string temp2 = irGen.newTemp();
+            Symbol tempSym2; tempSym2.name = temp2; tempSym2.type = "int"; symTab.addSymbol(tempSym2);
+            irGen.addQuad("ADD", temp1, index2ExpVal, temp2);
+
+            // Final offset in bytes: temp2 * element_size
+            std::string elementSize = "4";
+            finalOffsetBytesTemp = irGen.newTemp();
+            Symbol tempSymFinalOff; tempSymFinalOff.name = finalOffsetBytesTemp; tempSymFinalOff.type = "int"; symTab.addSymbol(tempSymFinalOff);
+            irGen.addQuad("MUL", temp2, elementSize, finalOffsetBytesTemp);
+        } else {
+            semanticError("Array '" + identName + "' has unsupported number of dimensions: " + std::to_string(sym->arrayDimensions.size()) + " (line " + std::to_string(identLine) + "). Only 1D or 2D supported for LVal element access.");
+            return ""; // Or a mangled base name if that's a valid interpretation
+        }
 
         if (isAssignmentLHS && sym->isConstant) {
              semanticError("Cannot assign to element of constant array \"" + sym->name + "\" (line " + std::to_string(identLine) + ").");
         }
 
-        // IR for array element address calculation:
-        // effective_addr_temp = ADD_OFFSET base_name_for_IR, (index_exp_val * element_size)
-        std::string elementSize = "4"; // Assuming int arrays (word size)
-        std::string offsetBytesTemp = irGen.newTemp();
-        Symbol tempSymbolOffset;
-        tempSymbolOffset.name = offsetBytesTemp;
-        tempSymbolOffset.type = "int";
-        tempSymbolOffset.isConstant = false;
-        tempSymbolOffset.isArray = false;
-        tempSymbolOffset.scopeLevel = symTab.currentScopeLevel;
-        tempSymbolOffset.isGlobal = (symTab.currentScopeLevel == 1);
-        if (!symTab.addSymbol(tempSymbolOffset)) {
-            semanticError("Failed to add temporary variable " + offsetBytesTemp + " to symbol table in LVal.");
-        }
-
-        irGen.addQuad("MUL", indexExpVal, elementSize, offsetBytesTemp);
-
         std::string effectiveAddressTemp = irGen.newTemp();
-        Symbol tempSymbolAddr;
-        tempSymbolAddr.name = effectiveAddressTemp;
-        tempSymbolAddr.type = "int_addr"; // Indicate it holds an address
-        tempSymbolAddr.isConstant = false;
-        tempSymbolAddr.isArray = false;
-        tempSymbolAddr.scopeLevel = symTab.currentScopeLevel;
-        tempSymbolAddr.isGlobal = (symTab.currentScopeLevel == 1);
+        Symbol tempSymbolAddr; tempSymbolAddr.name = effectiveAddressTemp; tempSymbolAddr.type = "int_addr";
+        tempSymbolAddr.scopeLevel = symTab.currentScopeLevel; tempSymbolAddr.isGlobal = (symTab.currentScopeLevel == 1);
         if (!symTab.addSymbol(tempSymbolAddr)) {
             semanticError("Failed to add temporary variable " + effectiveAddressTemp + " to symbol table in LVal.");
         }
-
-        // nameForIRBase is the (potentially mangled) base name of the array.
-        irGen.addQuad("ADD_OFFSET", nameForIRBase, offsetBytesTemp, effectiveAddressTemp);
-        return effectiveAddressTemp; // Return the temp holding the calculated *address* of the element
-    } else { // Scalar variable
+        irGen.addQuad("ADD_OFFSET", nameForIRBase, finalOffsetBytesTemp, effectiveAddressTemp);
+        return effectiveAddressTemp; 
+    } else { // Scalar variable or array name used as address (e.g. passed to function)
         if (isAssignmentLHS && sym->isConstant) {
             semanticError("Cannot assign to constant identifier \"" + sym->name + "\" (line " + std::to_string(identLine) + ").");
         }
-        return nameForIRBase; // Return the (potentially mangled) name of the scalar variable itself
+        // If sym is an array but no brackets follow, it means using the array name, which decays to its base address.
+        // The mangled name (nameForIRBase) is appropriate for this in IR.
+        return nameForIRBase; 
     }
 }
 

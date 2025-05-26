@@ -60,10 +60,10 @@ public:
     void parseConstDecl();
     std::string parseBType();
     void parseConstDef(const std::string& constBaseType);
-    std::string parseConstInitVal(Symbol& constSym, bool parsingArrayElement = false);
+    std::string parseConstInitVal(Symbol& constSym, bool parsingArrayElement = false, int currentDimension = 0);
     void parseVarDecl();
     void parseVarDef(const std::string& varBaseType);
-    std::string parseInitVal(Symbol& varSym);
+    std::string parseInitVal(Symbol& varSym, int currentDimension, int& elementsInitializedSoFar);
     void parseFuncDef();
     void parseMainFuncDef();
     std::string parseFuncType();
