@@ -1,8 +1,13 @@
-
-
-int main()
-{
-    int i = getint();
-    printf("\n");
+int main() {
+    int a, b, c, d, e, f;
+    a = getint(); // 1
+    b = getint(); // 2
+    c = getint(); // 3
+    d = a + b;    // d = 1 + 2 (_t0 = a+b)
+    e = a + b;    // e should become e = _t0
+    f = (a+b) * c; // f should become f = _t0 * c
+    printf("result is %d.", d); // 3
+    printf("result is %d.", e); // 3
+    printf("result is %d.", f); // 9
     return 0;
 }

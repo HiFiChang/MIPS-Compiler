@@ -103,70 +103,6 @@ std::string SyntaxAnalyzer::getExpType(const std::string& expResult) {
     return "unknown_exp_type(" + expResult + ")";
 }
 
-// Static helper function to reorder quadruples, placing the main function first.
-static std::vector<Quadruple> reorderQuadsForMainFirst(const std::vector<Quadruple>& originalQuads) {
-    std::vector<Quadruple> reorderedQuads;
-    std::vector<Quadruple> globalInitQuads;
-    std::vector<Quadruple> mainFunctionQuads;
-    std::vector<Quadruple> otherFunctionQuads;
-
-    std::string currentProcessingFuncName = "";
-    bool mainFound = false;
-    bool inAnyFunction = false;
-
-    for (const auto& quad : originalQuads) {
-        if (quad.op == "FUNC_BEGIN") {
-            inAnyFunction = true;
-            currentProcessingFuncName = quad.arg1;
-            if (currentProcessingFuncName == "main") {
-                mainFound = true;
-                mainFunctionQuads.push_back(quad);
-            } else {
-                otherFunctionQuads.push_back(quad);
-            }
-        } else if (quad.op == "FUNC_END") {
-            if (currentProcessingFuncName == "main" && mainFound) {
-                mainFunctionQuads.push_back(quad);
-            } else if (!currentProcessingFuncName.empty()) { // End of a non-main function
-                otherFunctionQuads.push_back(quad);
-            }
-            inAnyFunction = false;
-            currentProcessingFuncName = "";
-        } else {
-            if (currentProcessingFuncName == "main" && mainFound) {
-                mainFunctionQuads.push_back(quad);
-            } else if (!currentProcessingFuncName.empty()) { // Inside a non-main function
-                otherFunctionQuads.push_back(quad);
-            } else { // Not inside any specific function currently (could be global or between functions)
-                 // Heuristic: if not in a function yet, it's likely global init code
-                 // Or if a function just ended, and this is not a FUNC_BEGIN
-                if (!inAnyFunction) {
-                    globalInitQuads.push_back(quad);
-                } else {
-                    otherFunctionQuads.push_back(quad);
-                }
-            }
-        }
-    }
-
-    reorderedQuads.insert(reorderedQuads.end(), globalInitQuads.begin(), globalInitQuads.end());
-    if (mainFound) {
-        reorderedQuads.insert(reorderedQuads.end(), mainFunctionQuads.begin(), mainFunctionQuads.end());
-    }
-    reorderedQuads.insert(reorderedQuads.end(), otherFunctionQuads.begin(), otherFunctionQuads.end());
-
-    // If main wasn't found but there were quads, it implies an issue or no main function.
-    if (!mainFound && !originalQuads.empty()) {
-        if (reorderedQuads.empty() && !originalQuads.empty()) return originalQuads;
-    }
-     if (reorderedQuads.size() != originalQuads.size()) {
-        // This indicates a logic error in quad distribution.
-        return originalQuads; // Fallback to prevent code loss
-    }
-
-    return reorderedQuads;
-}
-
 // CompUnit → {Decl} {FuncDef} MainFuncDef
 void SyntaxAnalyzer::parseCompUnit() {
     while (currentToken.type != TOKEN_EOF) {
@@ -181,18 +117,12 @@ void SyntaxAnalyzer::parseCompUnit() {
 
             if (token1.type == INTTK && token2.type == MAINTK) { // MainFuncDef: int main ()
                 parseMainFuncDef();
-                // As per many SysY grammars, MainFuncDef is the last part.
-                // If your grammar allows declarations/definitions after main, remove this break.
                 break;
             } else if (token2.type == IDENFR && token3.type == LPARENT) {
-                // FuncDef: (int | void) ident ( ... )
                 parseFuncDef();
             } else if (token1.type == INTTK && token2.type == IDENFR) {
-                // VarDecl: int ident ... (must not be followed by LPARENT immediately if it's a var)
-                // This case is covered if the FuncDef condition (token3 == LPARENT) is false.
                 parseDecl();
             } else if (token1.type == VOIDTK && !(token2.type == IDENFR && token3.type == LPARENT)) {
-                 // VOIDTK not followed by IDENFR LPARENT is an error at global scope for declarations
                  semanticError("Unexpected token sequence at global scope starting with VOID: " + token1.lexeme + " " + token2.lexeme);
                  break;
             }
@@ -207,7 +137,6 @@ void SyntaxAnalyzer::parseCompUnit() {
             try {
                 tokenNameStr = lexer.getTokenNames().at(currentToken.type);
             } catch (const std::out_of_range& oor) {
-                // Handle cases where token type might be out of bounds for the map
             }
             semanticError("Unexpected token at global scope: " + currentToken.lexeme + " of type " + tokenNameStr);
             break;
@@ -215,22 +144,7 @@ void SyntaxAnalyzer::parseCompUnit() {
     }
     recordSyntaxOutput("<CompUnit>");
 
-    // --- MIPS Code Generation Phase (at the end of CompUnit parsing) ---
-    const auto& originalQuads = irGen.getQuads();
-
-    if (originalQuads.empty()) {
-        std::cerr << "No quadruples generated. Skipping MIPS generation." << std::endl;
-        return;
-    }
-
-    const std::vector<Quadruple> reorderedQuads = reorderQuadsForMainFirst(originalQuads);
-
-    try {
-        MipsGenerator finalMipsGen(this->mipsFileName, symTab, reorderedQuads);
-        finalMipsGen.generate();
-    } catch (const std::exception& e) {
-        std::cerr << "Error generating " << this->mipsFileName << ": " << e.what() << std::endl;
-    }
+    // MIPS Code Generation Phase is NOW MOVED to main.cpp
 }
 
 // BType → 'int'
