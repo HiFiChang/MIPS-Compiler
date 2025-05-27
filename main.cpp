@@ -11,13 +11,11 @@
 #include <string>
 #include <algorithm> // For std::sort
 
-// --- Optimization Flags (Uncomment to enable) ---
 #define ENABLE_LCSE
-// #define ENABLE_CONSTANT_FOLDING // Example for a future optimization
-// --- End Optimization Flags ---
+#define ENABLE_DCE
 
 // --- Debug Flags ---
-// #define PRINT_CFG_DETAILS // Uncomment to print detailed CFG to console
+#define PRINT_CFG_DETAILS // Uncomment to print detailed CFG to console
 // --- End Debug Flags ---
 
 // 定义 saveQuadruplesToFile 函数
@@ -121,12 +119,12 @@ int main() {
 
     try {
         // 1. Frontend Stages
-        Lexer lexer(sourceFile, "lexer_debug_output.txt");
-        lexer.processFile();
+        Lexer lexer(sourceFile, "lexer_debug_output.txt"); 
+        lexer.processFile(); 
 
-        SymbolTable symTab; 
-        IRGenerator irGen;   
-
+        SymbolTable symTab;
+        IRGenerator irGen;
+        
         SyntaxAnalyzer analyzer(lexer, symTab, irGen, "" /* mipsFileName not used by analyzer */, false);
         analyzer.analyze(); 
 
@@ -137,11 +135,11 @@ int main() {
             std::cerr << "Failed to save original quadruples to quads_original.txt" << std::endl;
         }
 
-        // 2. Middle-end: CFG Construction and Optimization
+        // 2. Middle-end: CFG Construction, Optimization, and Analysis
 #ifdef PRINT_CFG_DETAILS
-        std::cout << "\n--- Building CFGs and Optimizing ---" << std::endl;
+        std::cout << "\n--- Building CFGs, Optimizing, and Analyzing ---" << std::endl;
 #else
-        std::cout << "\n--- Processing CFGs and Optimizing ---" << std::endl;
+        std::cout << "\n--- Processing CFGs, Optimizing, and Analyzing ---" << std::endl;
 #endif
 
         std::vector<std::vector<Quadruple>> functions_quads_list;
@@ -153,8 +151,6 @@ int main() {
             for (const auto& quad : original_ir_quads) {
                 if (quad.op == "FUNC_BEGIN") {
                     if(in_function_scope && !current_function_q_list.empty()){ 
-                        // This case implies a FUNC_BEGIN without a preceding FUNC_END for the previous function.
-                        // Treat accumulated quads as belonging to an implicitly ended function.
                         functions_quads_list.push_back(current_function_q_list); 
                     }
                     current_function_q_list.clear();
@@ -207,32 +203,63 @@ int main() {
             std::cout << "LCSE complete for: " << func_name_for_cfg << "." << std::endl;
 #endif
 
-            std::vector<Quadruple> optimized_quads_this_func;
-            std::vector<int> block_ids_sorted;
-            for (const auto& block_pair : cfg.blocks) {
-                block_ids_sorted.push_back(block_pair.first);
-            }
-            std::sort(block_ids_sorted.begin(), block_ids_sorted.end());
-            for (int block_id : block_ids_sorted) {
-                const auto& block = cfg.blocks.at(block_id);
-                for (const auto& q_opt : block.quads) {
-                    optimized_quads_this_func.push_back(q_opt);
+            // Perform Live Variable Analysis
+            std::cout << "Performing Live Variable Analysis for: " << func_name_for_cfg << "..." << std::endl;
+            cfg.computeLiveVariables(symTab); // Pass the symbol table
+            std::cout << "Live Variable Analysis complete for: " << func_name_for_cfg << "." << std::endl;
+
+#ifdef ENABLE_DCE
+            // Perform Dead Code Elimination
+            std::cout << "Performing Dead Code Elimination for: " << func_name_for_cfg << "..." << std::endl;
+            cfg.eliminateDeadCode(symTab);
+            std::cout << "Dead Code Elimination complete for: " << func_name_for_cfg << "." << std::endl;
+#endif
+
+            // Optionally, print quads again after DCE to see the effect
+            // This part needs to be conditional as well if DCE is disabled, or handle it gracefully.
+            // For simplicity, we can assume if ENABLE_DCE is off, quads_after_dce will be the same as quads_after_lva (or whatever was before)
+            // We'll adjust the print and save logic slightly.
+
+            std::vector<Quadruple> quads_for_collection_after_opts;
+            // Reconstruct quads from CFG blocks. If DCE was run, these are post-DCE.
+            // If DCE was not run, these are post-LVA (or post-LCSE if LVA doesn't change quads structually).
+            std::vector<int> block_ids_for_reconstruction;
+            for(const auto& block_pair : cfg.blocks) block_ids_for_reconstruction.push_back(block_pair.first);
+            std::sort(block_ids_for_reconstruction.begin(), block_ids_for_reconstruction.end());
+            for(int block_id : block_ids_for_reconstruction) {
+                if (cfg.blocks.count(block_id)) {
+                    const auto& block = cfg.blocks.at(block_id);
+                    quads_for_collection_after_opts.insert(quads_for_collection_after_opts.end(), block.quads.begin(), block.quads.end());
                 }
             }
-            
-            all_optimized_quads_for_mips_gen.insert(all_optimized_quads_for_mips_gen.end(), 
-                                                   optimized_quads_this_func.begin(), optimized_quads_this_func.end());
 
-            std::string optimized_quads_filename = "quads_" + func_name_for_cfg + "_optimized.txt";
-            if (saveQuadruplesToFile(optimized_quads_this_func, optimized_quads_filename)) {
-                std::cout << "Optimized quadruples for " << func_name_for_cfg << " saved to " << optimized_quads_filename << std::endl;
+            std::string output_quads_filename_suffix = "_post_opts.txt";
+#ifdef ENABLE_DCE
+            std::cout << "Quadruples after potential Dead Code Elimination for function " << func_name_for_cfg << ":\\n";
+            output_quads_filename_suffix = "_post_dce.txt";
+#else
+            std::cout << "Quadruples after optimizations (DCE disabled) for function " << func_name_for_cfg << ":\\n";
+#endif
+            
+            std::string output_quads_filename_prefix = "quads_";
+            std::string output_quads_filename = output_quads_filename_prefix + func_name_for_cfg + output_quads_filename_suffix;
+            
+            if (saveQuadruplesToFile(quads_for_collection_after_opts, output_quads_filename)) {
+                std::cout << "Quads (" << output_quads_filename_suffix.substr(1, output_quads_filename_suffix.find('.')-1) 
+                          << ") for " << func_name_for_cfg << " saved to " << output_quads_filename << std::endl;
             } else {
-                std::cerr << "Failed to save optimized quadruples for " << func_name_for_cfg << " to " << optimized_quads_filename << std::endl;
+                std::cerr << "Failed to save quads (" << output_quads_filename_suffix.substr(1, output_quads_filename_suffix.find('.')-1) 
+                          << ") for " << func_name_for_cfg << " to " << output_quads_filename << std::endl;
             }
+
+            // Append these optimized quads to the list for MIPS generation
+            all_optimized_quads_for_mips_gen.insert(all_optimized_quads_for_mips_gen.end(),
+                                                    quads_for_collection_after_opts.begin(), quads_for_collection_after_opts.end());
 
 #ifdef PRINT_CFG_DETAILS
             std::cout << "--- CFG for function: " << func_name_for_cfg << " --- (Reflects Optimizations)" << std::endl;
-            cfg.printGraph(std::cout);
+            cfg.printGraph(std::cout); // This will print quads, and then LVA results are printed by computeLiveVariables itself
+            
             std::string dot_filename = "cfg_" + func_name_for_cfg + ".dot";
             std::ofstream dot_file(dot_filename);
             if (dot_file.is_open()) {
@@ -242,20 +269,23 @@ int main() {
             } else {
                 std::cerr << "Error: Could not open DOT file " << dot_filename << " for writing." << std::endl;
             }
+            // LVA results are now printed directly from cfg.computeLiveVariables if its internal cout is uncommented
 #endif
             func_idx++;
         }
 
 #ifdef PRINT_CFG_DETAILS
-        std::cout << "\n--- CFG Processing and Optimization Complete ---" << std::endl;
+        std::cout << "\n--- CFG Processing, Optimization, and Analysis Complete ---" << std::endl;
 #else
-        std::cout << "\n--- CFG Processing and Optimization Complete ---" << std::endl;
+        std::cout << "\n--- CFG Processing, Optimization, and Analysis Complete ---" << std::endl;
 #endif
 
         // 3. Backend: MIPS Code Generation
         if (all_optimized_quads_for_mips_gen.empty() && !original_ir_quads.empty() && functions_quads_list.empty()){
              std::cout << "No functions found, but global quads exist. Generating MIPS for global quads only." << std::endl;
-             const std::vector<Quadruple> quads_for_mips = reorderQuadsForMainFirst(all_optimized_quads_for_mips_gen); // Should mostly be global_quads_for_mips
+             // This branch might be less relevant now if all_optimized_quads_for_mips_gen correctly collects function quads.
+             // However, if original_ir_quads only had globals and no functions, it would still be valid.
+             const std::vector<Quadruple> quads_for_mips = reorderQuadsForMainFirst(all_optimized_quads_for_mips_gen); 
              if (saveQuadruplesToFile(quads_for_mips, "quads_final_for_mips.txt")) {
                  std::cout << "Final quadruples for MIPS generation saved to quads_final_for_mips.txt" << std::endl;
              }
@@ -276,7 +306,7 @@ int main() {
             std::cout << "No quads to generate MIPS code from (original was also empty)." << std::endl;
         }
 
-
+        
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;

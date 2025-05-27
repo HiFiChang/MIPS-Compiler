@@ -1,13 +1,40 @@
-int main() {
-    int a, b, c, d, e, f;
-    a = getint(); // 1
-    b = getint(); // 2
-    c = getint(); // 3
-    d = a + b;    // d = 1 + 2 (_t0 = a+b)
-    e = a + b;    // e should become e = _t0
-    f = (a+b) * c; // f should become f = _t0 * c
-    printf("result is %d.", d); // 3
-    printf("result is %d.", e); // 3
-    printf("result is %d.", f); // 9
+
+
+/* 全局变量，用来在 testLAnd/testLOr 中保存逻辑值 */
+int logicNumber;
+
+/* 将输入 n 赋给 logicNumber，并返回真 */
+int testLAnd(int n)
+{
+    logicNumber = n;
+    return 1;
+}
+
+/* 将输入 n 赋给 logicNumber，并返回真 */
+int testLOr(int n)
+{
+    logicNumber = n;
+    return 1;
+}
+
+int main()
+{
+    int number;
+
+    /* 从标准输入读一个整数 */
+    number = getint();
+
+    /* 情况 1：先取 !logicNumber，再调用 testLAnd */
+    logicNumber = 1;
+    if (!logicNumber && testLAnd(number)) { /* 空 */ }
+    printf("%d\n", logicNumber);
+
+    /* 情况 2：先调用 testLAnd，再取 !logicNumber */
+    logicNumber = 1;
+    if (testLAnd(number) && !logicNumber) { /* 空 */ }
+    printf("%d\n", logicNumber);
+
+
+
     return 0;
 }

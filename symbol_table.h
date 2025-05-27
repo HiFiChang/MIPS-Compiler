@@ -30,6 +30,7 @@ public:
     int getCurrentFrameSizeForLocals() const; 
     void beginFunctionCompilation(const std::string& funcName);
     void endFunctionCompilation(const std::string& funcName);
+    std::vector<Symbol> getGlobalVariableSymbols() const;
 };
 
 #endif // MINE_SYMBOLTABLE_H_ 

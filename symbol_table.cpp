@@ -358,3 +358,22 @@ void SymbolTable::endFunctionCompilation(const std::string& funcName) {
                   << funcName << "', Active: '" << activeFunctionName << "'" << std::endl;
     }
 }
+
+std::vector<Symbol> SymbolTable::getGlobalVariableSymbols() const {
+    std::vector<Symbol> globalVars;
+    if (!tableStack.empty()) { // Global scope is tableStack[0]
+        const auto& globalScopeMap = tableStack[0];
+        for (const auto& pair : globalScopeMap) {
+            const Symbol& sym = pair.second;
+            // Filter out non-variables like functions and string literals (which are handled differently)
+            // This condition assumes that typical variable types are "int", "const_int", "array_int", etc.
+            // and function types include "_func".
+            if (sym.type != "int_func" && sym.type != "void_func" && 
+                sym.type.find("func") == std::string::npos && // A more general check for func types
+                sym.type != "string_literal") {
+                globalVars.push_back(sym);
+            }
+        }
+    }
+    return globalVars;
+}

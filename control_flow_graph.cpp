@@ -381,7 +381,7 @@ const std::set<std::string> COMPUTATIONAL_OPS = {
 };
 
 // Local Common Subexpression Elimination Helper: Generates a canonical key for an expression.
-std::string get_expression_key(const Quadruple& q) {
+std::string ControlFlowGraph::get_expression_key(const Quadruple& q) const {
     std::string key = q.op + ":";
     if (q.op == "ADD" || q.op == "MUL" || q.op == "EQL" || q.op == "NEQ") {
         // Commutative operations: sort operands for canonical form
@@ -505,4 +505,363 @@ void ControlFlowGraph::performLCSE() {
             }
         }
     }
+}
+
+// Helper for Live Variable Analysis
+bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTab) const {
+    // Added for debugging
+    std::cout << "[isVariable DBG] Checking: '" << s << "' for func '" << this->current_processing_function_name << "'" << std::endl;
+
+    if (s.empty() || s == "-" || s == "_") { // Added s == "_" as a common placeholder
+        if (s == "_") std::cout << "[isVariable DBG] Result for '_': false (placeholder)" << std::endl;
+        else if (s.empty()) std::cout << "[isVariable DBG] Result for empty string: false" << std::endl;
+        else std::cout << "[isVariable DBG] Result for '-': false (placeholder)" << std::endl;
+        return false;
+    }
+
+    // 1. Check if it's a numeric literal (integer or float)
+    char* p_end_char_check; 
+
+    std::strtol(s.c_str(), &p_end_char_check, 10); 
+    if (*p_end_char_check == '\0') { 
+        if (!(s.length() == 1 && (s[0] == '+' || s[0] == '-'))) { // Not just a sign character
+             std::cout << "[isVariable DBG] Result for '" << s << "': false (integer literal)" << std::endl;
+            return false; 
+        }
+    }
+
+    std::strtod(s.c_str(), &p_end_char_check);
+    if (*p_end_char_check == '\0') { 
+        if (s.find('.') != std::string::npos || s.find('e') != std::string::npos || s.find('E') != std::string::npos) {
+            std::cout << "[isVariable DBG] Result for '" << s << "': false (float literal)" << std::endl;
+            return false;
+        }
+    }
+
+    // 2. Check for known label prefixes (e.g., _L followed by digits, or _str_lit_)
+    if (s.length() > 2 && s[0] == '_' && s[1] == 'L') {
+        bool all_digits_after_L = true;
+        for (size_t i = 2; i < s.length(); ++i) {
+            if (!isdigit(s[i])) {
+                all_digits_after_L = false;
+                break;
+            }
+        }
+        if (all_digits_after_L) {
+            std::cout << "[isVariable DBG] Result for '" << s << "': false (label like _L<digits>)" << std::endl;
+            return false;
+        }
+    }
+    if (s.rfind("_str_lit_", 0) == 0) {
+        std::cout << "[isVariable DBG] Result for '" << s << "': false (label _str_lit_)" << std::endl;
+        return false;
+    }
+    
+    // 3. Check for typical temporary variable pattern (e.g., _t followed by digits)
+    if (s.rfind("_t", 0) == 0) {
+        if (s.length() > 1) { 
+            if (s[1] == 't' && s.length() > 2) { 
+                 bool all_digits_after_t = true;
+                 for (size_t i = 2; i < s.length(); ++i) {
+                    if (!isdigit(s[i])) {
+                        all_digits_after_t = false;
+                        break;
+                    }
+                }
+                if (all_digits_after_t) {
+                    std::cout << "[isVariable DBG] Result for '" << s << "': true (temporary _t<digits>)" << std::endl;
+                    return true;
+                }
+            }
+        }
+    }
+    
+    // 4. Query the symbol table
+    std::cout << "  [isVariable DBG] Querying SymbolTable for '" << s << "' in func '" << this->current_processing_function_name << "'" << std::endl;
+    Symbol* symbol_ptr = const_cast<SymbolTable&>(symTab).lookupSymbol(s, false, this->current_processing_function_name);
+    std::cout << "  [isVariable DBG] SymbolTable lookup for '" << s << "' returned: " << (symbol_ptr ? "FOUND" : "NOT FOUND") << std::endl;
+
+    if (symbol_ptr != nullptr) {
+        std::cout << "    [isVariable DBG] Symbol '" << s << "' type: '" << symbol_ptr->type << "', isParam: " << symbol_ptr->isParam << std::endl;
+        const std::string& sym_type = symbol_ptr->type;
+        if (sym_type == "int" || sym_type == "const_int" || 
+            sym_type.rfind("array", 0) == 0 || 
+            symbol_ptr->isParam) {
+            std::cout << "[isVariable DBG] Result for '" << s << "': true (symbol table - var/param)" << std::endl;
+             return true;
+        }
+        if (sym_type == "int_func" || sym_type == "void_func" || sym_type.rfind("func", sym_type.length() - 4) != std::string::npos) {
+            std::cout << "[isVariable DBG] Result for '" << s << "': false (symbol table - function)" << std::endl;
+            return false;
+        }
+        std::cout << "[isVariable DBG] Result for '" << s << "': false (symbol table - other known type)" << std::endl;
+        return false; 
+    }
+
+    // 5. Heuristic for other identifiers
+    if (!s.empty() && (isalpha(s[0]) || s[0] == '_')) {
+        const static std::set<std::string> IR_OPS = {
+            "ADD", "SUB", "MUL", "DIV", "MOD", "GOTO", "ASSIGN", 
+            "IF_TRUE_GOTO", "IF_FALSE_GOTO", "CALL", "RETURN_VAL",
+            "RETURN_VOID", "FUNC_BEGIN", "FUNC_END", "PRINT_INT",
+            "PRINT_STR", "GET_INT", "PARAM", "ARG",
+            "LSS", "LEQ", "GRE", "GEQ", "EQL", "NEQ"
+            // Note: Labels like _L0, _L1 are now caught earlier. If any label format slips through,
+            // they might be caught here and potentially misclassified if not in IR_OPS.
+            // However, our specific label check (step 2) should be primary for labels.
+        };
+        if (IR_OPS.count(s)) {
+            std::cout << "[isVariable DBG] Result for '" << s << "': false (IR Op)" << std::endl;
+            return false; 
+        }
+        std::cout << "[isVariable DBG] Result for '" << s << "': true (heuristic - identifier)" << std::endl;
+        return true; 
+    }
+    
+    std::cout << "[isVariable DBG] Result for '" << s << "': false (default fallback)" << std::endl;
+    return false; 
+}
+
+void ControlFlowGraph::computeLiveVariables(const SymbolTable& symTab) {
+    live_in.clear();
+    live_out.clear();
+
+    if (blocks.empty()) {
+        return;
+    }
+
+    for (const auto& block_pair : blocks) {
+        live_in[block_pair.first] = std::set<std::string>();
+        live_out[block_pair.first] = std::set<std::string>();
+    }
+
+    std::map<int, std::set<std::string>> local_def_vars;
+    std::map<int, std::set<std::string>> local_use_vars;
+
+    for (const auto& block_pair : blocks) {
+        int block_id = block_pair.first;
+        const BasicBlock& block = block_pair.second;
+        std::set<std::string> defined_in_block_for_use_calc; 
+
+        for (const Quadruple& q : block.quads) {
+            // Handle CALL instruction specifically for global variable side effects
+            if (q.op == "CALL") {
+                std::vector<Symbol> global_vars = symTab.getGlobalVariableSymbols();
+                for (const Symbol& global_sym : global_vars) {
+                    if (isVariable(global_sym.name, symTab)) {
+                        // Refined logic for adding to local_use_vars:
+                        // Add to USE only if not already defined earlier in this block.
+                        if (defined_in_block_for_use_calc.find(global_sym.name) == defined_in_block_for_use_calc.end()) {
+                            local_use_vars[block_id].insert(global_sym.name);
+                        }
+                        // Conservatively assume CALL defines all global variables.
+                        local_def_vars[block_id].insert(global_sym.name);
+                        // And mark it as defined from this point onwards in the block for subsequent quads.
+                        defined_in_block_for_use_calc.insert(global_sym.name); 
+                    }
+                }
+                // The result of the CALL is also a definition
+                if (!q.result.empty() && isVariable(q.result, symTab)) {
+                    local_def_vars[block_id].insert(q.result);
+                    defined_in_block_for_use_calc.insert(q.result);
+                }
+            } else { // Existing logic for non-CALL instructions
+                if (!q.arg1.empty() && isVariable(q.arg1, symTab)) {
+                    if (defined_in_block_for_use_calc.find(q.arg1) == defined_in_block_for_use_calc.end()) {
+                        local_use_vars[block_id].insert(q.arg1);
+                    }
+                }
+                if (!q.arg2.empty() && isVariable(q.arg2, symTab)) {
+                    if (defined_in_block_for_use_calc.find(q.arg2) == defined_in_block_for_use_calc.end()) {
+                        local_use_vars[block_id].insert(q.arg2);
+                    }
+                }
+                if (!q.result.empty() && isVariable(q.result, symTab)) {
+                    local_def_vars[block_id].insert(q.result);
+                    defined_in_block_for_use_calc.insert(q.result);
+                }
+            }
+            // PARAM instruction might also need special handling if its argument can be a variable from a prior computation
+            // For now, focusing on CALL for global variable effects.
+        }
+    }
+
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        std::vector<int> block_ids_to_process;
+        for(const auto& pair : blocks) block_ids_to_process.push_back(pair.first);
+        std::sort(block_ids_to_process.rbegin(), block_ids_to_process.rend());
+
+        for (int block_id : block_ids_to_process) {
+            const BasicBlock& current_block = blocks.at(block_id);
+            std::set<std::string> new_live_out;
+            for (int succ_id : current_block.successors) {
+                if (live_in.count(succ_id)) {
+                    const auto& succ_live_in = live_in.at(succ_id);
+                    new_live_out.insert(succ_live_in.begin(), succ_live_in.end());
+                }
+            }
+            if (live_out[block_id] != new_live_out) {
+                live_out[block_id] = new_live_out;
+                changed = true;
+            }
+
+            std::set<std::string> live_out_minus_def = live_out[block_id];
+            if (local_def_vars.count(block_id)){
+                for (const std::string& def_var : local_def_vars.at(block_id)) {
+                    live_out_minus_def.erase(def_var);
+                }
+            }
+            
+            std::set<std::string> new_live_in = local_use_vars[block_id];
+            new_live_in.insert(live_out_minus_def.begin(), live_out_minus_def.end());
+
+            if (live_in[block_id] != new_live_in) {
+                live_in[block_id] = new_live_in;
+                changed = true;
+            }
+        }
+    }
+    
+    // (Optional) Print results for debugging
+    
+    std::cout << "\n--- Live Variable Analysis Results for Function: " << this->current_processing_function_name << " ---" << std::endl;
+    // Sort block IDs for consistent output order
+    std::vector<int> sorted_block_ids_for_print;
+    for (const auto& block_pair : blocks) {
+        sorted_block_ids_for_print.push_back(block_pair.first);
+    }
+    std::sort(sorted_block_ids_for_print.begin(), sorted_block_ids_for_print.end());
+
+    for (int id : sorted_block_ids_for_print) {
+        std::cout << "Block " << id << ":\n";
+        // Ensure key exists before accessing, or use .at() inside a try-catch / check with .count()
+        std::cout << "  DEF: "; 
+        if(local_def_vars.count(id)) for(const auto&v : local_def_vars.at(id)) std::cout << v << " "; 
+        std::cout << "\n";
+        
+        std::cout << "  USE: "; 
+        if(local_use_vars.count(id)) for(const auto&v : local_use_vars.at(id)) std::cout << v << " "; 
+        std::cout << "\n";
+        
+        std::cout << "  LiveIN:  "; 
+        if(live_in.count(id)) for(const auto&v : live_in.at(id)) std::cout << v << " "; 
+        std::cout << "\n";
+        
+        std::cout << "  LiveOUT: "; 
+        if(live_out.count(id)) for(const auto&v : live_out.at(id)) std::cout << v << " "; 
+        std::cout << "\n";
+    }
+    
+}
+
+void ControlFlowGraph::eliminateDeadCode(const SymbolTable& symTab) {
+    if (blocks.empty() || live_out.empty()) { // Ensure liveness has been computed
+        // Optionally, print a warning or throw an error if liveness info is missing
+        std::cerr << "Warning: Skipping dead code elimination as liveness information is not available or CFG is empty." << std::endl;
+        return;
+    }
+
+    std::cout << "\n--- Performing Dead Code Elimination for Function: " << this->current_processing_function_name << " ---" << std::endl;
+
+    for (auto& block_pair : blocks) {
+        BasicBlock& block = block_pair.second;
+        if (block.quads.empty()) {
+            continue;
+        }
+
+        std::set<std::string> live_now = live_out[block.id]; // Initialize with LiveOUT for the current block
+        std::vector<Quadruple> new_quads_for_block;
+
+        // Iterate quads in reverse order (from last to first)
+        for (auto it = block.quads.rbegin(); it != block.quads.rend(); ++it) {
+            const Quadruple& q = *it;
+            bool is_this_quad_dead = false;
+
+            // Determine if this instruction is a candidate for DCE
+            // Ops that primarily define a variable and have no other essential side effects.
+            bool op_can_be_eliminated = 
+                (q.op == "ASSIGN" || q.op == "ADD" || q.op == "SUB" || 
+                 q.op == "MUL" || q.op == "DIV" || q.op == "MOD" || 
+                 q.op == "LSS" || q.op == "LEQ" || q.op == "GRE" || 
+                 q.op == "GEQ" || q.op == "EQL" || q.op == "NEQ");
+                 // Note: GET_INT also defines a variable but has side effects (I/O).
+                 // CALL also has side effects and its result definition is handled by liveness.
+
+            if (op_can_be_eliminated && !q.result.empty() && isVariable(q.result, symTab)) {
+                Symbol* result_sym = const_cast<SymbolTable&>(symTab).lookupSymbol(q.result, true, this->current_processing_function_name);
+                bool is_assignment_to_global = (q.op == "ASSIGN" && result_sym && result_sym->isGlobal);
+
+                // If the result of this instruction is not in live_now, it's potentially dead.
+                // However, an assignment to a global variable is a side effect and should not be eliminated solely based on function-local liveness.
+                if (live_now.find(q.result) == live_now.end()) {
+                    if (!is_assignment_to_global) {
+                        is_this_quad_dead = true;
+                        std::cout << "  Dead Code Identified in Block " << block.id << ": (" 
+                                  << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ")\n";
+                    } else {
+                        std::cout << "  [DCE_INFO] Preserving ASSIGN to global var: (" 
+                                  << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ") despite result not in local live_now.\n";
+                    }
+                }
+            }
+
+            if (!is_this_quad_dead) {
+                new_quads_for_block.push_back(q);
+            }
+
+            // Update live_now for the state *before* this instruction q was executed.
+            // live_now = (live_now - DEF(q)) U USE(q)
+            
+            // Ops that primarily USE q.arg1 and don't define q.result (or define memory/side-effect)
+            if (q.op == "STORE_TO_ADDR") { // Example: (STORE_TO_ADDR, target_addr_temp, _, value_source_in_q_result)
+                if (!q.arg1.empty() && isVariable(q.arg1, symTab)) { // target_addr_temp is used
+                    live_now.insert(q.arg1);
+                }
+                if (!q.result.empty() && isVariable(q.result, symTab)) { // value_source_in_q_result is used
+                    live_now.insert(q.result);
+                }
+                // Does not define a temporary in q.result for liveness tracking purposes of erase(q.result).
+            } else if (q.op == "PRINT_INT" || q.op == "PRINT_STR" || 
+                       q.op == "RETURN_VAL" || q.op == "ARG" ||
+                       q.op == "IF_TRUE_GOTO" || q.op == "IF_FALSE_GOTO" ||
+                       q.op == "GOTO" /* GOTO uses q.result (label) but not for var liveness */) {
+                // These ops primarily USE q.arg1 (and sometimes q.arg2 for IFs if it's a var).
+                // q.result for these is often a label or empty, not a defined temporary whose definition would be erased.
+                if (!q.arg1.empty() && isVariable(q.arg1, symTab)) {
+                    live_now.insert(q.arg1);
+                }
+                // For IF_XY_GOTO, arg2 is typically the target label, not a variable used in calculation.
+                // If your IF ops could use a variable in arg2, you'd add: 
+                // if ((q.op == "IF_TRUE_GOTO" || q.op == "IF_FALSE_GOTO") && !q.arg2.empty() && isVariable(q.arg2, symTab)) {
+                //    live_now.insert(q.arg2);
+                // }
+            }
+            // CALL instruction is a bit special: it defines q.result, and uses ARGs pushed before it.
+            // The current loop processes one instruction at a time, so ARG liveness is handled when ARG is processed.
+            // FUNC_BEGIN, FUNC_END, label definitions don't directly participate in this live_now update for vars.
+            else { 
+                // Default handling for computational/assignment ops (ADD, MUL, ASSIGN, LOAD_FROM_ADDR, GET_INT, CALL etc.)
+                // These are assumed to define q.result.
+                if (!q.result.empty() && isVariable(q.result, symTab)) {
+                    live_now.erase(q.result); // DEF(q) - remove defined variable from live_now
+                }
+
+                // Add what q uses to live_now
+                if (!q.arg1.empty() && isVariable(q.arg1, symTab)) {
+                    live_now.insert(q.arg1); // USE(q)
+                }
+                if (!q.arg2.empty() && isVariable(q.arg2, symTab)) {
+                    live_now.insert(q.arg2); // USE(q)
+                }
+            }
+        }
+
+        // The new_quads_for_block contains non-dead quads in reverse order.
+        // Reverse it to get the correct order and update the block's quads.
+        std::reverse(new_quads_for_block.begin(), new_quads_for_block.end());
+        block.quads = new_quads_for_block;
+    }
+     std::cout << "--- Dead Code Elimination Completed for Function: " << this->current_processing_function_name << " ---" << std::endl;
 } 

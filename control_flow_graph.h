@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <iostream> // For printGraph ostream
+#include "symbol_table.h" // Include SymbolTable for type information
 
 // Forward declaration (if needed by other files including this one early)
 // class ControlFlowGraph; 
@@ -44,63 +45,57 @@ struct BasicBlock {
 
 class ControlFlowGraph {
 public:
-    std::map<int, BasicBlock> blocks;       // Map block ID to BasicBlock object
-    int entry_block_id;                     // ID of the entry basic block for the function
-    std::set<int> exit_block_ids;           // IDs of basic blocks that end with a return/function end
-
-    // Stores the original linear sequence of quads for the current function being processed.
-    // This can be useful if BasicBlock stores indices instead of copies of quads.
-    // const std::vector<Quadruple>* source_quads_ptr; 
-
     ControlFlowGraph();
-
-    // Builds the CFG for a single function's quadruples
-    // Assumes quads_for_function is a complete sequence for one function,
-    // starting with FUNC_BEGIN and ending appropriately (e.g. before next FUNC_BEGIN or EOF).
     void build(const std::vector<Quadruple>& quads_for_function, const std::string& functionName);
-
     void printGraph(std::ostream& out) const;
-    void printDot(std::ostream& out, const std::string& graphName = "CFG") const; // For Graphviz DOT format
+    void printDot(std::ostream& out, const std::string& graphName) const;
+    void performLCSE();
+    void computeLiveVariables(const SymbolTable& symTab);
+    void eliminateDeadCode(const SymbolTable& symTab);
+    void reset();
 
-    void performLCSE(); // Local Common Subexpression Elimination
+    // --- Members for Live Variable Analysis ---
+    std::map<int, BasicBlock> blocks; // Made public for easier access during analysis/generation phases
+    int entry_block_id;
+    std::set<int> exit_block_ids;
+
+    std::map<int, std::set<std::string>> live_in;  // live_in[block_id] = set of var names
+    std::map<int, std::set<std::string>> live_out; // live_out[block_id] = set of var names
+    
+    // These can be computed transiently or stored if needed for other passes
+    // For now, let's compute them within computeLiveVariables
+    // std::map<int, std::set<std::string>> def_vars; 
+    // std::map<int, std::set<std::string>> use_vars;
+
+    // --- End Members for Live Variable Analysis ---
 
 private:
     int next_block_id_counter;
-    
-    // Maps original quadruple index (from input vector) to the ID of the basic block it belongs to.
     std::map<int, int> quad_index_to_block_id_map;
-    
-    // Maps label strings to the original index of the quadruple that defines this label.
     std::map<std::string, int> label_to_quad_index_map;
-    
-    // Maps label strings directly to the ID of the basic block that starts with this label.
-    // This is populated after blocks are formed.
     std::map<std::string, int> label_to_block_id_map;
+    std::string current_processing_function_name; 
 
-    std::string current_processing_function_name;
-
-    void reset(); // Resets internal state for building a new graph
-
-    // Step 1: Identify leader instructions (by their indices in the input quad vector)
-    std::set<int> identifyLeaders(const std::vector<Quadruple>& quads);
-    
-    // Step 2: Partition quadruples into basic blocks based on leaders
-    void partitionIntoBasicBlocks(const std::vector<Quadruple>& quads, const std::set<int>& leaders);
-    
-    // Step 3: Link basic blocks by identifying successors and predecessors
-    void linkBasicBlocks(const std::vector<Quadruple>& quads);
-
-    // Helper predicates for quadruple operations
+    // Helper predicates
     bool isLabelDefinition(const Quadruple& quad) const;
     bool isUnconditionalJump(const Quadruple& quad) const;
     bool isConditionalJump(const Quadruple& quad) const;
     bool isReturn(const Quadruple& quad) const;
-    bool isFunctionCall(const Quadruple& quad) const; // May not directly affect block ends, but good to identify
+    bool isFunctionCall(const Quadruple& quad) const;
     bool isFunctionBegin(const Quadruple& quad) const;
     bool isFunctionEnd(const Quadruple& quad) const;
-    
-    // Helper to get target label from jump instructions
     std::string getTargetLabelFromJump(const Quadruple& quad) const;
+
+    std::set<int> identifyLeaders(const std::vector<Quadruple>& quads);
+    void partitionIntoBasicBlocks(const std::vector<Quadruple>& quads, const std::set<int>& leaders_set);
+    void linkBasicBlocks(const std::vector<Quadruple>& quads);
+
+    // Helper for LCSE
+    std::string get_expression_key(const Quadruple& q) const;
+
+    // Helper for Live Variable Analysis
+    bool isVariable(const std::string& s, const SymbolTable& symTab) const;
+
 };
 
 #endif // CONTROL_FLOW_GRAPH_H 
