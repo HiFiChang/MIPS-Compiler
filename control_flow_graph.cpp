@@ -1,6 +1,11 @@
 #include "control_flow_graph.h"
 #include <stdexcept> // For std::runtime_error in BasicBlock::getLastInstruction
 #include <algorithm> // For std::sort in identifyLeaders
+#include <iostream>  // For std::cout, std::cerr (used in debug and warnings)
+
+// Define CFG_DEBUG through compiler flags (e.g., -DCFG_DEBUG) to enable debug output.
+// Or, uncomment the line below to enable debug output directly in code.
+// #define CFG_DEBUG
 
 ControlFlowGraph::ControlFlowGraph() {
     reset();
@@ -509,13 +514,16 @@ void ControlFlowGraph::performLCSE() {
 
 // Helper for Live Variable Analysis
 bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTab) const {
-    // Added for debugging
+#ifdef CFG_DEBUG
     std::cout << "[isVariable DBG] Checking: '" << s << "' for func '" << this->current_processing_function_name << "'" << std::endl;
+#endif
 
     if (s.empty() || s == "-" || s == "_") { // Added s == "_" as a common placeholder
+#ifdef CFG_DEBUG
         if (s == "_") std::cout << "[isVariable DBG] Result for '_': false (placeholder)" << std::endl;
         else if (s.empty()) std::cout << "[isVariable DBG] Result for empty string: false" << std::endl;
         else std::cout << "[isVariable DBG] Result for '-': false (placeholder)" << std::endl;
+#endif
         return false;
     }
 
@@ -525,7 +533,9 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
     std::strtol(s.c_str(), &p_end_char_check, 10); 
     if (*p_end_char_check == '\0') { 
         if (!(s.length() == 1 && (s[0] == '+' || s[0] == '-'))) { // Not just a sign character
+#ifdef CFG_DEBUG
              std::cout << "[isVariable DBG] Result for '" << s << "': false (integer literal)" << std::endl;
+#endif
             return false; 
         }
     }
@@ -533,7 +543,9 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
     std::strtod(s.c_str(), &p_end_char_check);
     if (*p_end_char_check == '\0') { 
         if (s.find('.') != std::string::npos || s.find('e') != std::string::npos || s.find('E') != std::string::npos) {
+#ifdef CFG_DEBUG
             std::cout << "[isVariable DBG] Result for '" << s << "': false (float literal)" << std::endl;
+#endif
             return false;
         }
     }
@@ -548,12 +560,16 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
             }
         }
         if (all_digits_after_L) {
+#ifdef CFG_DEBUG
             std::cout << "[isVariable DBG] Result for '" << s << "': false (label like _L<digits>)" << std::endl;
+#endif
             return false;
         }
     }
     if (s.rfind("_str_lit_", 0) == 0) {
+#ifdef CFG_DEBUG
         std::cout << "[isVariable DBG] Result for '" << s << "': false (label _str_lit_)" << std::endl;
+#endif
         return false;
     }
     
@@ -569,7 +585,9 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
                     }
                 }
                 if (all_digits_after_t) {
+#ifdef CFG_DEBUG
                     std::cout << "[isVariable DBG] Result for '" << s << "': true (temporary _t<digits>)" << std::endl;
+#endif
                     return true;
                 }
             }
@@ -577,24 +595,36 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
     }
     
     // 4. Query the symbol table
+#ifdef CFG_DEBUG
     std::cout << "  [isVariable DBG] Querying SymbolTable for '" << s << "' in func '" << this->current_processing_function_name << "'" << std::endl;
+#endif
     Symbol* symbol_ptr = const_cast<SymbolTable&>(symTab).lookupSymbol(s, false, this->current_processing_function_name);
+#ifdef CFG_DEBUG
     std::cout << "  [isVariable DBG] SymbolTable lookup for '" << s << "' returned: " << (symbol_ptr ? "FOUND" : "NOT FOUND") << std::endl;
+#endif
 
     if (symbol_ptr != nullptr) {
+#ifdef CFG_DEBUG
         std::cout << "    [isVariable DBG] Symbol '" << s << "' type: '" << symbol_ptr->type << "', isParam: " << symbol_ptr->isParam << std::endl;
+#endif
         const std::string& sym_type = symbol_ptr->type;
         if (sym_type == "int" || sym_type == "const_int" || 
             sym_type.rfind("array", 0) == 0 || 
             symbol_ptr->isParam) {
+#ifdef CFG_DEBUG
             std::cout << "[isVariable DBG] Result for '" << s << "': true (symbol table - var/param)" << std::endl;
+#endif
              return true;
         }
         if (sym_type == "int_func" || sym_type == "void_func" || sym_type.rfind("func", sym_type.length() - 4) != std::string::npos) {
+#ifdef CFG_DEBUG
             std::cout << "[isVariable DBG] Result for '" << s << "': false (symbol table - function)" << std::endl;
+#endif
             return false;
         }
+#ifdef CFG_DEBUG
         std::cout << "[isVariable DBG] Result for '" << s << "': false (symbol table - other known type)" << std::endl;
+#endif
         return false; 
     }
 
@@ -606,19 +636,22 @@ bool ControlFlowGraph::isVariable(const std::string& s, const SymbolTable& symTa
             "RETURN_VOID", "FUNC_BEGIN", "FUNC_END", "PRINT_INT",
             "PRINT_STR", "GET_INT", "PARAM", "ARG",
             "LSS", "LEQ", "GRE", "GEQ", "EQL", "NEQ"
-            // Note: Labels like _L0, _L1 are now caught earlier. If any label format slips through,
-            // they might be caught here and potentially misclassified if not in IR_OPS.
-            // However, our specific label check (step 2) should be primary for labels.
         };
         if (IR_OPS.count(s)) {
+#ifdef CFG_DEBUG
             std::cout << "[isVariable DBG] Result for '" << s << "': false (IR Op)" << std::endl;
+#endif
             return false; 
         }
+#ifdef CFG_DEBUG
         std::cout << "[isVariable DBG] Result for '" << s << "': true (heuristic - identifier)" << std::endl;
+#endif
         return true; 
     }
     
+#ifdef CFG_DEBUG
     std::cout << "[isVariable DBG] Result for '" << s << "': false (default fallback)" << std::endl;
+#endif
     return false; 
 }
 
@@ -724,8 +757,7 @@ void ControlFlowGraph::computeLiveVariables(const SymbolTable& symTab) {
         }
     }
     
-    // (Optional) Print results for debugging
-    
+#ifdef CFG_DEBUG    
     std::cout << "\n--- Live Variable Analysis Results for Function: " << this->current_processing_function_name << " ---" << std::endl;
     // Sort block IDs for consistent output order
     std::vector<int> sorted_block_ids_for_print;
@@ -753,7 +785,7 @@ void ControlFlowGraph::computeLiveVariables(const SymbolTable& symTab) {
         if(live_out.count(id)) for(const auto&v : live_out.at(id)) std::cout << v << " "; 
         std::cout << "\n";
     }
-    
+#endif    
 }
 
 void ControlFlowGraph::eliminateDeadCode(const SymbolTable& symTab) {
@@ -763,7 +795,9 @@ void ControlFlowGraph::eliminateDeadCode(const SymbolTable& symTab) {
         return;
     }
 
+#ifdef CFG_DEBUG
     std::cout << "\n--- Performing Dead Code Elimination for Function: " << this->current_processing_function_name << " ---" << std::endl;
+#endif
 
     for (auto& block_pair : blocks) {
         BasicBlock& block = block_pair.second;
@@ -798,11 +832,15 @@ void ControlFlowGraph::eliminateDeadCode(const SymbolTable& symTab) {
                 if (live_now.find(q.result) == live_now.end()) {
                     if (!is_assignment_to_global) {
                         is_this_quad_dead = true;
+#ifdef CFG_DEBUG
                         std::cout << "  Dead Code Identified in Block " << block.id << ": (" 
                                   << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ")\n";
+#endif
                     } else {
+#ifdef CFG_DEBUG
                         std::cout << "  [DCE_INFO] Preserving ASSIGN to global var: (" 
                                   << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ") despite result not in local live_now.\n";
+#endif
                     }
                 }
             }
@@ -863,5 +901,7 @@ void ControlFlowGraph::eliminateDeadCode(const SymbolTable& symTab) {
         std::reverse(new_quads_for_block.begin(), new_quads_for_block.end());
         block.quads = new_quads_for_block;
     }
+#ifdef CFG_DEBUG
      std::cout << "--- Dead Code Elimination Completed for Function: " << this->current_processing_function_name << " ---" << std::endl;
+#endif
 } 

@@ -11,8 +11,8 @@
 #include <string>
 #include <algorithm> // For std::sort
 
-#define ENABLE_LCSE
-#define ENABLE_DCE
+// #define ENABLE_LCSE
+// #define ENABLE_DCE
 
 // --- Debug Flags ---
 #define PRINT_CFG_DETAILS // Uncomment to print detailed CFG to console

@@ -1,40 +1,96 @@
+const int base = 16;
+int a[1000000];
+int ans;
 
-
-/* 全局变量，用来在 testLAnd/testLOr 中保存逻辑值 */
-int logicNumber;
-
-/* 将输入 n 赋给 logicNumber，并返回真 */
-int testLAnd(int n)
-{
-    logicNumber = n;
-    return 1;
+// 取 num 在第 pos 位的值（按 base 进制）
+int getNumPos(int num, int pos) {
+    int i = 0;
+    while (i < pos) {
+        num = num / base;
+        i = i + 1;
+    }
+    return num % base;
 }
 
-/* 将输入 n 赋给 logicNumber，并返回真 */
-int testLOr(int n)
-{
-    logicNumber = n;
-    return 1;
+// 对全局数组 a[l..r-1] 做原地基数排序
+void radixSort(int bitround, int l, int r) {
+    int head[base] = {};
+    int tail[base] = {};
+    int cnt[base]  = {};
+
+    if (bitround == -1 || l + 1 >= r) return;
+
+    // 统计桶大小
+    {
+        int i = l;
+        while (i < r) {
+            int d = getNumPos(a[i], bitround);
+            cnt[d] = cnt[d] + 1;
+            i = i + 1;
+        }
+        head[0] = l;
+        tail[0] = l + cnt[0];
+        i = 1;
+        while (i < base) {
+            head[i] = tail[i - 1];
+            tail[i] = head[i] + cnt[i];
+            i = i + 1;
+        }
+    }
+    // 桶内原地划分
+    {
+        int i = 0;
+        while (i < base) {
+            while (head[i] < tail[i]) {
+                int v = a[head[i]];
+                while (getNumPos(v, bitround) != i) {
+                    int t = v;
+                    int b = getNumPos(t, bitround);
+                    v = a[head[b]];
+                    a[head[b]] = t;
+                    head[b] = head[b] + 1;
+                }
+                a[head[i]] = v;
+                head[i] = head[i] + 1;
+            }
+            i = i + 1;
+        }
+    }
+    // 递归分段
+    {
+        int i = 0;
+        head[0] = l;
+        tail[0] = l + cnt[0];
+        while (i < base) {
+            if (i > 0) {
+                head[i] = tail[i - 1];
+                tail[i] = head[i] + cnt[i];
+            }
+            radixSort(bitround - 1, head[i], tail[i]);
+            i = i + 1;
+        }
+    }
 }
 
-int main()
-{
-    int number;
+int main() {
+    int n, i;
+    n = getint();
+    i = 0;
+    while (i < n) {
+        a[i] = getint();
+        i = i + 1;
+    }
 
-    /* 从标准输入读一个整数 */
-    number = getint();
+    radixSort(8, 0, n);
 
-    /* 情况 1：先取 !logicNumber，再调用 testLAnd */
-    logicNumber = 1;
-    if (!logicNumber && testLAnd(number)) { /* 空 */ }
-    printf("%d\n", logicNumber);
-
-    /* 情况 2：先调用 testLAnd，再取 !logicNumber */
-    logicNumber = 1;
-    if (testLAnd(number) && !logicNumber) { /* 空 */ }
-    printf("%d\n", logicNumber);
-
-
-
+    i = 0;
+    while (i < n) {
+        ans = ans + i * (a[i] % (2 + i));
+        i = i + 1;
+    }
+    if (ans < 0) {
+        ans = -ans;
+    }
+    printf("%d\n", ans);
     return 0;
 }
